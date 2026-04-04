@@ -8,7 +8,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/auth" || pathname.startsWith("/auth/")) return true;
   if (pathname.startsWith("/api/auth")) return true;
   if (pathname === "/api/billing/webhook") return true;
-  if (pathname === "/api/health") return true;
+  if (pathname === "/api/health" || pathname === "/api/health/db") return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname === "/favicon.ico") return true;
   if (pathname.startsWith("/uploads/")) return true;
