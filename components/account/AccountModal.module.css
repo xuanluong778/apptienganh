@@ -1,0 +1,129 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(20, 40, 70, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+.panel {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 20px;
+  border: 4px solid #fff;
+  background: linear-gradient(165deg, #ffffff 0%, #eef8ff 100%);
+  box-shadow: 0 12px 40px rgba(0, 40, 90, 0.25), 0 8px 0 rgba(0, 0, 0, 0.08);
+  padding: 20px 18px 18px;
+  position: relative;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(79, 140, 255, 0.15);
+  color: #2e4f87;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.title {
+  margin: 0 40px 8px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1f4d8f;
+}
+
+.row {
+  margin-top: 12px;
+}
+
+.label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #4a6a9a;
+  margin-bottom: 6px;
+}
+
+.value {
+  width: 100%;
+  border: 3px solid rgba(79, 140, 255, 0.35);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: #243d6b;
+  background: #fff;
+}
+
+.pwRow {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.pwInput {
+  flex: 1;
+  min-width: 0;
+  border: 3px solid rgba(79, 140, 255, 0.35);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: #243d6b;
+  background: #fff;
+}
+
+.eyeBtn {
+  flex-shrink: 0;
+  width: 44px;
+  border: 3px solid rgba(79, 140, 255, 0.35);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #36558b;
+}
+
+.eyeBtn:hover {
+  background: #f3f8ff;
+}
+
+.hint {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6a7fa3;
+  line-height: 1.35;
+}
+
+.remember {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #36558b;
+}
+
+.remember input {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f8cff;
+}

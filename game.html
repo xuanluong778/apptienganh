@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Match Game - Kids English Fun</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg1: #9de8ff;
+      --bg2: #74d5ff;
+      --green: #70d86f;
+      --blue: #4f8cff;
+      --pink: #ff7eb6;
+      --orange: #ffad4f;
+      --purple: #8d7cff;
+      --text: #23406c;
+      --shadow: 0 12px 0 rgba(35, 50, 102, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Fredoka", sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 58%, var(--green) 100%);
+      padding: 1rem;
+    }
+
+    .page {
+      width: min(1050px, 96vw);
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .title {
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(2rem, 4.8vw, 3.6rem);
+      color: #fff;
+      text-shadow: 0 4px 0 #2b65ca, 0 10px 20px rgba(27, 44, 95, 0.33);
+      margin-top: 0.4rem;
+    }
+
+    .subtitle {
+      color: #1f4d8f;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      font-size: clamp(1rem, 2.3vw, 1.25rem);
+    }
+
+    .board {
+      background: #ffffff;
+      border: 4px solid #fff;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .panel {
+      background: #f7fbff;
+      border: 3px dashed #c8d7ff;
+      border-radius: 20px;
+      padding: 0.8rem;
+    }
+
+    .panel h2 {
+      font-family: "Baloo 2", cursive;
+      color: #325089;
+      margin-bottom: 0.6rem;
+      font-size: 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(100px, 1fr));
+      gap: 0.7rem;
+    }
+
+    .drop-zone {
+      background: #fff;
+      border: 3px solid #d8e2ff;
+      border-radius: 16px;
+      padding: 0.7rem;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.35rem;
+      transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .drop-zone.over {
+      border-color: var(--purple);
+      background: #f1edff;
+      transform: scale(1.02);
+    }
+
+    .drop-zone.correct {
+      border-color: #58be68;
+      background: #ecffef;
+    }
+
+    .drop-zone img {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      filter: drop-shadow(0 5px 5px rgba(24, 53, 94, 0.22));
+    }
+
+    .word-card {
+      border: 3px solid #fff;
+      border-radius: 16px;
+      padding: 0.75rem 0.5rem;
+      font-family: "Baloo 2", cursive;
+      font-size: 1.4rem;
+      color: #fff;
+      cursor: grab;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.16);
+      user-select: none;
+      touch-action: none;
+      transition: transform 0.15s ease;
+    }
+
+    .word-card:nth-child(1) { background: linear-gradient(180deg, #68d5ff, var(--blue)); }
+    .word-card:nth-child(2) { background: linear-gradient(180deg, #ff95c7, var(--pink)); }
+    .word-card:nth-child(3) { background: linear-gradient(180deg, #ffbf6f, var(--orange)); }
+    .word-card:nth-child(4) { background: linear-gradient(180deg, #a99cff, var(--purple)); }
+
+    .word-card.dragging {
+      opacity: 0.55;
+      transform: scale(1.04);
+    }
+
+    .word-card.matched {
+      opacity: 0.55;
+      pointer-events: none;
+      filter: grayscale(0.2);
+    }
+
+    .score-box {
+      margin-top: 0.9rem;
+      background: #fff8cc;
+      border: 3px solid #ffe07c;
+      border-radius: 16px;
+      padding: 0.8rem;
+      font-family: "Baloo 2", cursive;
+      color: #8f5a13;
+      font-size: 1.35rem;
+      min-height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .actions {
+      margin-top: 0.9rem;
+      display: flex;
+      gap: 0.65rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 3px solid #fff;
+      border-radius: 14px;
+      padding: 0.45rem 1rem;
+      color: #fff;
+      font-family: "Baloo 2", cursive;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 7px 0 rgba(0, 0, 0, 0.15);
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn.reset { background: #4f88ff; }
+    .btn.home { background: #ff78b2; }
+    .btn.quiz { background: #8d7cff; }
+
+    @media (max-width: 760px) {
+      .board {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1 class="title">Word Matching Game</h1>
+    <p class="subtitle">Drag each word to the matching picture. Have fun!</p>
+
+    <section class="board">
+      <div class="panel">
+        <h2>Pictures</h2>
+        <div id="imageGrid" class="grid"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Words</h2>
+        <div id="wordGrid" class="grid"></div>
+      </div>
+    </section>
+
+    <div id="scoreBox" class="score-box">Match all 4 words to see your score!</div>
+    <div class="actions">
+      <button id="resetBtn" class="btn reset">Play Again</button>
+      <a class="btn quiz" href="quiz.html">Try Quiz</a>
+      <a class="btn home" href="index.html">Back Home</a>
+    </div>
+  </main>
+
+  <script>
+    const items = [
+      { id: "apple", word: "Apple", image: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f34e.svg" },
+      { id: "cat", word: "Cat", image: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f431.svg" },
+      { id: "book", word: "Book", image: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4d6.svg" },
+      { id: "ball", word: "Ball", image: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26bd.svg" }
+    ];
+
+    const imageGrid = document.getElementById("imageGrid");
+    const wordGrid = document.getElementById("wordGrid");
+    const scoreBox = document.getElementById("scoreBox");
+    const resetBtn = document.getElementById("resetBtn");
+
+    let matchedCount = 0;
+    let correctCount = 0;
+
+    function shuffle(list) {
+      const copy = [...list];
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function renderBoard() {
+      imageGrid.innerHTML = "";
+      wordGrid.innerHTML = "";
+      matchedCount = 0;
+      correctCount = 0;
+      scoreBox.textContent = "Match all 4 words to see your score!";
+
+      const shuffledWords = shuffle(items);
+      const shuffledImages = shuffle(items);
+
+      shuffledImages.forEach((item) => {
+        const zone = document.createElement("div");
+        zone.className = "drop-zone";
+        zone.dataset.id = item.id;
+        zone.innerHTML = `
+          <img src="${item.image}" alt="${item.word}" />
+          <small>Drop word here</small>
+        `;
+        addDropEvents(zone);
+        imageGrid.appendChild(zone);
+      });
+
+      shuffledWords.forEach((item) => {
+        const wordCard = document.createElement("div");
+        wordCard.className = "word-card";
+        wordCard.draggable = true;
+        wordCard.dataset.id = item.id;
+        wordCard.textContent = item.word;
+        addDragEvents(wordCard);
+        wordGrid.appendChild(wordCard);
+      });
+    }
+
+    function addDragEvents(card) {
+      card.addEventListener("dragstart", (event) => {
+        card.classList.add("dragging");
+        event.dataTransfer.setData("text/plain", card.dataset.id);
+      });
+
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+      });
+    }
+
+    function addDropEvents(zone) {
+      zone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        zone.classList.add("over");
+      });
+
+      zone.addEventListener("dragleave", () => {
+        zone.classList.remove("over");
+      });
+
+      zone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        zone.classList.remove("over");
+        const draggedId = event.dataTransfer.getData("text/plain");
+        const card = document.querySelector(`.word-card[data-id="${draggedId}"]`);
+        if (!card || card.classList.contains("matched")) {
+          return;
+        }
+
+        matchedCount += 1;
+        if (draggedId === zone.dataset.id) {
+          zone.classList.add("correct");
+          zone.innerHTML += `<strong>${card.textContent}</strong>`;
+          card.classList.add("matched");
+          correctCount += 1;
+        } else {
+          zone.classList.remove("correct");
+          card.classList.add("matched");
+        }
+
+        if (matchedCount === items.length) {
+          scoreBox.textContent = `Great job! Your score: ${correctCount}/${items.length}`;
+          localStorage.setItem("matchScore", String(correctCount));
+          localStorage.setItem("matchTotal", String(items.length));
+        }
+      });
+    }
+
+    resetBtn.addEventListener("click", renderBoard);
+    renderBoard();
+  </script>
+</body>
+</html>

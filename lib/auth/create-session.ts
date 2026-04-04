@@ -1,0 +1,51 @@
+import { NextResponse } from "next/server";
+import pool from "@/lib/db";
+import { generateSessionToken } from "@/lib/auth";
+
+export const SESSION_COOKIE_NAME = "session_token";
+export const SESSION_DAYS = 7;
+
+export type SessionUser = {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
+
+export function sessionCookieOptions(expiresAt: Date) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: expiresAt,
+  };
+}
+
+/** Inserts session row and sets httpOnly cookie on the response. */
+export async function setSessionOnResponse(response: NextResponse, userId: number): Promise<string> {
+  const token = generateSessionToken();
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  await pool.query("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (?, ?, ?)", [
+    userId,
+    token,
+    expiresAt,
+  ]);
+  response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions(expiresAt));
+  return token;
+}
+
+export async function loadUserPayload(userId: number): Promise<SessionUser | null> {
+  const [rows] = await pool.query(
+    "SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1",
+    [userId]
+  );
+  const u = (rows as { id: number; name: string; email: string | null; phone: string | null }[])[0];
+  if (!u) return null;
+  return {
+    id: Number(u.id),
+    name: String(u.name),
+    email: u.email != null ? String(u.email) : null,
+    phone: u.phone != null ? String(u.phone) : null,
+  };
+}

@@ -1,0 +1,258 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(20, 40, 70, 0.55);
+  backdrop-filter: blur(6px);
+  animation: paywallFadeIn 0.2s ease-out;
+}
+
+@keyframes paywallFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.panel {
+  width: 100%;
+  max-width: 420px;
+  max-height: min(90vh, 640px);
+  overflow-y: auto;
+  border-radius: 20px;
+  border: 4px solid #fff;
+  background: linear-gradient(165deg, #ffffff 0%, #eef8ff 100%);
+  box-shadow: 0 12px 40px rgba(0, 40, 90, 0.25), 0 8px 0 rgba(0, 0, 0, 0.08);
+  padding: 22px 20px 20px;
+  position: relative;
+  animation: paywallPop 0.25s ease-out;
+}
+
+@keyframes paywallPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.closeBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(79, 140, 255, 0.15);
+  color: #2e4f87;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.closeBtn:hover {
+  background: rgba(79, 140, 255, 0.28);
+}
+
+.title {
+  margin: 0 44px 8px 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #1f4d8f;
+  line-height: 1.25;
+}
+
+.subtitle {
+  margin: 0 0 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4a6a9a;
+  line-height: 1.45;
+}
+
+.billingToggle {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(79, 140, 255, 0.12);
+  border: 2px solid rgba(79, 140, 255, 0.25);
+}
+
+.billingOpt {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  background: transparent;
+  color: #36558b;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.billingOpt:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.billingOptOn {
+  background: #fff;
+  color: #1f4d8f;
+  box-shadow: 0 2px 0 rgba(32, 49, 99, 0.08);
+}
+
+.pricingList {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.planRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 3px solid rgba(79, 140, 255, 0.35);
+  box-shadow: 0 3px 0 rgba(32, 49, 99, 0.06);
+}
+
+.planName {
+  font-weight: 800;
+  color: #1f4d8f;
+  font-size: 1rem;
+}
+
+.planQuota {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #2fb363;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn {
+  width: 100%;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.12);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btnPro {
+  background: linear-gradient(180deg, #72d9ff, #4f8cff);
+  color: #fff;
+}
+
+.btnVip {
+  background: linear-gradient(180deg, #ff96c7, #ff73b0);
+  color: #fff;
+}
+
+.bankRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@media (max-width: 420px) {
+  .bankRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btnBank {
+  width: 100%;
+  border: 3px dashed rgba(79, 140, 255, 0.55);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  background: #fff;
+  color: #1f4d8f;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btnBank:hover:not(:disabled) {
+  background: #f3f8ff;
+  border-color: rgba(79, 140, 255, 0.9);
+}
+
+.btnBank:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bankHint {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6a7fa3;
+  text-align: center;
+}
+
+.footerNote {
+  margin: 14px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6a7fa3;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.err {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffe8ec;
+  color: #a12;
+  font-size: 0.88rem;
+  font-weight: 700;
+}

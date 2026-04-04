@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kids English Fun</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sky: #8dd9ff;
+      --sun: #ffe16a;
+      --grass: #73d772;
+      --pink: #ff7eb6;
+      --purple: #8f7dff;
+      --orange: #ff9f4a;
+      --blue: #4b8dff;
+      --card-shadow: 0 16px 0 rgba(37, 37, 96, 0.15);
+      --btn-shadow: 0 10px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Fredoka", sans-serif;
+      color: #21304f;
+      background: linear-gradient(180deg, #9ce7ff 0%, #8dd9ff 55%, #9ae7ff 100%);
+      overflow: hidden;
+    }
+
+    .scene {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 2rem 1rem 3rem;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .sun {
+      position: absolute;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fff7b1, var(--sun));
+      top: 2.5rem;
+      right: 2rem;
+      box-shadow: 0 0 0 18px rgba(255, 230, 120, 0.25);
+      animation: pulse 2.4s ease-in-out infinite;
+      z-index: -2;
+    }
+
+    .cloud {
+      position: absolute;
+      background: #ffffffee;
+      width: 120px;
+      height: 42px;
+      border-radius: 999px;
+      filter: drop-shadow(0 5px 0 rgba(47, 62, 93, 0.1));
+      z-index: -2;
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: "";
+      position: absolute;
+      background: inherit;
+      border-radius: 50%;
+    }
+
+    .cloud::before {
+      width: 50px;
+      height: 50px;
+      top: -22px;
+      left: 20px;
+    }
+
+    .cloud::after {
+      width: 60px;
+      height: 60px;
+      top: -30px;
+      right: 18px;
+    }
+
+    .cloud.one {
+      top: 3.2rem;
+      left: 8%;
+      animation: floatCloud 18s linear infinite;
+    }
+
+    .cloud.two {
+      top: 8.5rem;
+      right: 27%;
+      transform: scale(0.9);
+      animation: floatCloud 24s linear infinite reverse;
+    }
+
+    .grass {
+      position: absolute;
+      bottom: -70px;
+      left: -2%;
+      width: 104%;
+      height: 220px;
+      background: var(--grass);
+      border-radius: 50% 50% 0 0;
+      z-index: -1;
+    }
+
+    .wrapper {
+      width: min(1000px, 95vw);
+      text-align: center;
+    }
+
+    h1 {
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(2.1rem, 5vw, 4.25rem);
+      font-weight: 800;
+      line-height: 1;
+      color: #ffffff;
+      text-shadow: 0 4px 0 #2a66d6, 0 10px 22px rgba(29, 54, 112, 0.35);
+      margin-bottom: 0.7rem;
+    }
+
+    .subtitle {
+      font-size: clamp(1rem, 2.4vw, 1.35rem);
+      font-weight: 600;
+      color: #264d8c;
+      margin-bottom: 2rem;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.2rem;
+    }
+
+    .big-btn {
+      min-width: 180px;
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      border: 4px solid #ffffff;
+      border-radius: 22px;
+      padding: 0.7rem 2rem;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: var(--btn-shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      letter-spacing: 0.4px;
+    }
+
+    .big-btn.learn {
+      background: linear-gradient(180deg, #4cc8ff, var(--blue));
+    }
+
+    .big-btn.play {
+      background: linear-gradient(180deg, #ff98cb, var(--pink));
+    }
+
+    .big-btn.dashboard {
+      background: linear-gradient(180deg, #a393ff, var(--purple));
+    }
+
+    .big-btn:hover {
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 14px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    .big-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .card {
+      background: #fff;
+      border: 4px solid #ffffff;
+      border-radius: 24px;
+      padding: 1.2rem;
+      box-shadow: var(--card-shadow);
+      text-align: left;
+      animation: bob 2.8s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+
+    .card:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+
+    .card:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+
+    .emoji {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+    }
+
+    .card h3 {
+      font-family: "Baloo 2", cursive;
+      font-size: 1.4rem;
+      color: #2a4d89;
+      margin-bottom: 0.3rem;
+    }
+
+    .card p {
+      font-size: 1rem;
+      color: #475d84;
+      line-height: 1.4;
+    }
+
+    .tag {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: #fff;
+      color: #5c6ce2;
+      font-family: "Baloo 2", cursive;
+      font-weight: 700;
+      border-radius: 999px;
+      border: 3px solid #ccd5ff;
+      padding: 0.25rem 0.8rem;
+      box-shadow: 0 7px 0 rgba(83, 93, 196, 0.16);
+      transform: rotate(-6deg);
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes floatCloud {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(14px); }
+      100% { transform: translateX(0); }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        overflow-y: auto;
+      }
+
+      .scene {
+        padding-top: 4rem;
+      }
+
+      .big-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="scene">
+    <div class="sun"></div>
+    <div class="cloud one"></div>
+    <div class="cloud two"></div>
+    <div class="grass"></div>
+
+    <section class="wrapper">
+      <span class="tag">ABC Time</span>
+      <h1>Welcome to Kids English Fun!</h1>
+      <p class="subtitle">Learn new words, sing songs, and play happy games.</p>
+
+      <div class="actions">
+        <button class="big-btn learn" onclick="window.location.href='lesson.html'">Learn</button>
+        <button class="big-btn play" onclick="window.location.href='game.html'">Play</button>
+        <button class="big-btn dashboard" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      </div>
+
+      <div class="cards">
+        <article class="card">
+          <span class="emoji">📚</span>
+          <h3>Word Adventures</h3>
+          <p>Discover easy new words with bright pictures and simple sounds.</p>
+        </article>
+        <article class="card">
+          <span class="emoji">🎮</span>
+          <h3>Mini Games</h3>
+          <p>Match letters, tap balloons, and practice while having fun.</p>
+        </article>
+        <article class="card">
+          <span class="emoji">⭐</span>
+          <h3>Earn Stars</h3>
+          <p>Complete activities and collect stars for every lesson.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

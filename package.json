@@ -1,0 +1,40 @@
+{
+  "name": "kids-english-nextjs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:ngrok": "next dev -p 3000",
+    "tunnel": "ngrok http 3000 --host-header=rewrite",
+    "dev:clean": "node -e \"const fs=require('fs'); try{fs.rmSync('.next',{recursive:true,force:true});}catch(e){} try{fs.rmSync('.next-dev',{recursive:true,force:true});}catch(e){} console.log('Cleared .next / .next-dev');\"",
+    "dev:stable": "npm run dev:clean && next dev",
+    "dev:watchdog": "node scripts/dev-watchdog.mjs",
+    "health-check": "node scripts/health-check.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed:vocab": "node scripts/seed-1000-vocabulary.mjs",
+    "export:excel": "node scripts/export-project-excel.mjs"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
+    "arpabet-to-ipa": "^1.0.0",
+    "cmu-pronouncing-dictionary": "^3.0.0",
+    "iconv-lite": "^0.7.2",
+    "ioredis": "^5.10.1",
+    "microsoft-cognitiveservices-speech-sdk": "^1.49.0",
+    "mysql2": "^3.11.3",
+    "next": "^14.2.5",
+    "nodemailer": "^8.0.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "stripe": "^17.7.0",
+    "twilio": "^5.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "19.2.14",
+    "typescript": "^6.0.2",
+    "xlsx": "^0.18.5"
+  }
+}
