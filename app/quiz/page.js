@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import "./quiz.css";
 
 export default function QuizPage() {
   const [mode, setMode] = useState("1");
@@ -15,6 +16,7 @@ export default function QuizPage() {
   const [showResult, setShowResult] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState([]);
   const [completedParts, setCompletedParts] = useState({});
+  const [quizError, setQuizError] = useState("");
   const completionKey = "quiz-completed-parts-v1";
 
   const markPartCompleted = (part) => {
@@ -38,17 +40,51 @@ export default function QuizPage() {
 
   const loadRound = async (targetMode, targetSection) => {
     setLoading(true);
-    const response = await fetch(`/api/quiz/round?mode=${targetMode}&section=${targetSection}`, {
-      cache: "no-store",
-    });
-    const result = await response.json();
-    if (response.ok && result.success) {
-      setQuizData(result.data || []);
-      setSection(Number(result.meta?.section || targetSection || 1));
-      setTotalSections(Number(result.meta?.total_sections || 1));
-    } else {
+    setQuizError("");
+    const controller = new AbortController();
+    const timeoutMs = 25000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(
+        `/api/quiz/round?mode=${targetMode}&section=${targetSection}`,
+        { cache: "no-store", signal: controller.signal }
+      );
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        setQuizData([]);
+        setTotalSections(1);
+        setQuizError("Máy chủ trả về dữ liệu không hợp lệ. Hãy tải lại trang.");
+        resetRoundState();
+        setLoading(false);
+        return;
+      }
+      if (response.ok && result.success) {
+        setQuizData(result.data || []);
+        setSection(Number(result.meta?.section || targetSection || 1));
+        setTotalSections(Number(result.meta?.total_sections || 1));
+        setQuizError("");
+      } else {
+        setQuizData([]);
+        setTotalSections(1);
+        const msg =
+          typeof result.message === "string" && result.message.trim()
+            ? result.message.trim()
+            : `Không tải được quiz (mã ${response.status}).`;
+        setQuizError(msg);
+      }
+    } catch (err) {
       setQuizData([]);
       setTotalSections(1);
+      if (err?.name === "AbortError") {
+        setQuizError("Tải quiz quá lâu (timeout). Thử lại hoặc kiểm tra MySQL / API.");
+      } else {
+        setQuizError("Lỗi kết nối. Kiểm tra mạng và thử lại.");
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
     resetRoundState();
     setLoading(false);
@@ -78,11 +114,14 @@ export default function QuizPage() {
     [current, quizData.length]
   );
 
+  const getChoiceWord = (choice) =>
+    choice && typeof choice === "object" && choice.word !== undefined ? choice.word : choice;
+
   const handleChoiceClick = (choice) => {
     if (!currentQuestion) {
       return;
     }
-    setSelected(choice);
+    setSelected(getChoiceWord(choice));
   };
 
   const handleSubmitText = () => {
@@ -142,6 +181,15 @@ export default function QuizPage() {
 
   const optionLabels = ["A", "B", "C", "D"];
 
+  const speakEnglish = (text) => {
+    if (!text) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  };
+
   const playCurrentWord = () => {
     if (!currentQuestion) return;
     const audioUrl = currentQuestion.audio_url || "";
@@ -153,30 +201,33 @@ export default function QuizPage() {
     if (audioUrl) {
       const audio = new Audio(audioUrl);
       audio.play().catch(() => {
-        if (speakText) {
-          const utterance = new SpeechSynthesisUtterance(speakText);
-          utterance.lang = "en-US";
-          utterance.rate = 0.9;
-          window.speechSynthesis.cancel();
-          window.speechSynthesis.speak(utterance);
-        }
+        if (speakText) speakEnglish(speakText);
       });
       return;
     }
 
-    if (speakText) {
-      const utterance = new SpeechSynthesisUtterance(speakText);
-      utterance.lang = "en-US";
-      utterance.rate = 0.9;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+    if (speakText) speakEnglish(speakText);
+  };
+
+  /** Việt → Anh: phát từng đáp án (file âm thanh hoặc TTS). */
+  const playOptionWord = (choice) => {
+    const word = getChoiceWord(choice);
+    if (!word) return;
+    const audioUrl =
+      choice && typeof choice === "object" && choice.audio_url ? String(choice.audio_url).trim() : "";
+
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.play().catch(() => speakEnglish(String(word)));
+      return;
     }
+    speakEnglish(String(word));
   };
 
   return (
-    <main className="page">
-      <div className="bubbles" />
-      <section className="quizCard layout">
+    <main className="quiz-route">
+      <div className="quiz-bubbles" aria-hidden />
+      <section className="quizCard quiz-layout">
         <aside className="leftMenu">
           <h3>Chế độ</h3>
           <button className={`modeBtn ${mode === "1" ? "active" : ""}`} onClick={() => { setSection(1); setMode("1"); }}>
@@ -207,7 +258,10 @@ export default function QuizPage() {
                 onClick={() => setSection(part)}
                 title={`Phần thi ${part}`}
               >
-                <input type="checkbox" checked={isDone || isCurrent} readOnly />
+                <span
+                  className={`partMark ${isDone || isCurrent ? "partMark--on" : ""}`}
+                  aria-hidden
+                />
                 <span>P{part}</span>
               </button>
             );
@@ -216,6 +270,16 @@ export default function QuizPage() {
 
         {loading ? (
           <p className="subtitle">Đang tải câu hỏi...</p>
+        ) : quizError ? (
+          <div className="resultBox" style={{ maxWidth: "520px", margin: "1rem auto" }}>
+            <h2>Không chơi Quiz được</h2>
+            <p className="subtitle">{quizError}</p>
+            <button type="button" className="nextBtn" onClick={() => loadRound(mode, section)}>
+              Thử lại
+            </button>
+          </div>
+        ) : !quizData.length ? (
+          <p className="subtitle">Không có câu hỏi trong phần này.</p>
         ) : !showResult ? (
           <>
             <p className="subtitle">
@@ -234,37 +298,78 @@ export default function QuizPage() {
             </p>
 
             <div className="wordBox">{currentQuestion?.prompt}</div>
-            <p className="subtitle">{currentQuestion?.ipa || ""}</p>
-            <p className="subtitle">{currentQuestion?.question_text || ""}</p>
-            <p className="subtitle">{currentQuestion?.example_sentence || ""}</p>
-            <button
-              type="button"
-              className="nextBtn"
-              onClick={playCurrentWord}
-            >
-              🔊 Play
-            </button>
+            {mode !== "2" ? <p className="subtitle">{currentQuestion?.ipa || ""}</p> : null}
+            {mode !== "2" ? (
+              <>
+                <p className="subtitle">{currentQuestion?.question_text || ""}</p>
+                <p className="subtitle">{currentQuestion?.example_sentence || ""}</p>
+              </>
+            ) : null}
+            {mode !== "2" ? (
+              <button type="button" className="nextBtn nextBtn--play" onClick={playCurrentWord}>
+                🔊 Play
+              </button>
+            ) : null}
 
             {mode !== "3" ? (
-              <div className="choiceGrid">
-                {(currentQuestion?.options || []).map((choice, index) => {
-                  const isSelected = selected === choice;
+              mode === "2" ? (
+                <div className="choiceGrid choiceGrid--stacked">
+                  {(currentQuestion?.options || []).map((choice, index) => {
+                    const word = getChoiceWord(choice);
+                    const ipa = choice && typeof choice === "object" ? choice.ipa || "" : "";
+                    const isSelected = selected === word;
+                    let btnClass = "choiceBtn choiceBtn--block";
+                    if (isSelected) btnClass += " selected";
 
-                  let className = "choiceBtn";
-                  if (isSelected) className += " selected";
+                    return (
+                      <div
+                        className="choiceCell"
+                        key={`${current}-${index}-${String(word ?? "").slice(0, 48)}`}
+                      >
+                        <button type="button" className={btnClass} onClick={() => handleChoiceClick(choice)}>
+                          <span className="choiceBtn-top">
+                            <span className="optLabel">{optionLabels[index] || "?"}.</span>
+                            <span className="choiceWord-text">{word}</span>
+                          </span>
+                          {ipa ? <span className="choiceIpa">{ipa}</span> : null}
+                        </button>
+                        <button
+                          type="button"
+                          className="choicePlayMini"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            playOptionWord(choice);
+                          }}
+                          aria-label={`Nghe phát âm: ${word}`}
+                        >
+                          🔊 Play
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="choiceGrid">
+                  {(currentQuestion?.options || []).map((choice, index) => {
+                    const isSelected = selected === choice;
 
-                  return (
-                    <button
-                      key={choice}
-                      type="button"
-                      className={className}
-                      onClick={() => handleChoiceClick(choice)}
-                    >
-                      <span className="optLabel">{optionLabels[index] || "?"}.</span> {choice}
-                    </button>
-                  );
-                })}
-              </div>
+                    let className = "choiceBtn";
+                    if (isSelected) className += " selected";
+
+                    return (
+                      <button
+                        key={`${current}-${index}-${String(choice ?? "").slice(0, 48)}`}
+                        type="button"
+                        className={className}
+                        onClick={() => handleChoiceClick(choice)}
+                      >
+                        <span className="optLabel">{optionLabels[index] || "?"}.</span> {choice}
+                      </button>
+                    );
+                  })}
+                </div>
+              )
             ) : (
               <div className="choiceGrid" style={{ gridTemplateColumns: "1fr" }}>
                 <input
@@ -335,275 +440,6 @@ export default function QuizPage() {
         )}
         </div>
       </section>
-
-      <style jsx>{`
-        .page {
-          min-height: 100vh;
-          display: grid;
-          place-items: center;
-          padding: 1rem;
-          background: linear-gradient(180deg, #9de8ff 0%, #86dbff 55%, #79d877 100%);
-          font-family: "Fredoka", sans-serif;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .bubbles {
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.45) 0 20px, transparent 22px),
-            radial-gradient(circle at 80% 30%, rgba(255,255,255,0.35) 0 16px, transparent 18px),
-            radial-gradient(circle at 65% 75%, rgba(255,255,255,0.3) 0 22px, transparent 24px),
-            radial-gradient(circle at 35% 85%, rgba(255,255,255,0.35) 0 14px, transparent 16px);
-          animation: floatBg 6s ease-in-out infinite alternate;
-          pointer-events: none;
-        }
-
-        .quizCard {
-          width: min(1260px, 98vw);
-          background: #fff;
-          border: 4px solid #fff;
-          border-radius: 28px;
-          box-shadow: 0 14px 0 rgba(35, 51, 104, 0.16);
-          padding: 1.25rem 1.35rem 1.5rem;
-          text-align: center;
-          position: relative;
-          z-index: 1;
-          animation: popIn 0.4s ease-out;
-          overflow: hidden;
-        }
-        .layout {
-          display: grid;
-          grid-template-columns: 220px 1fr;
-          gap: 1.15rem;
-          align-items: start;
-        }
-        .leftMenu {
-          background: #f7fbff;
-          border: 2px dashed #c9d8ff;
-          border-radius: 16px;
-          padding: 0.6rem;
-        }
-        .modeBtn {
-          width: 100%;
-          margin-bottom: 0.4rem;
-          border: 2px solid #0b2115;
-          background: #0b2115;
-          color: #fff;
-          border-radius: 50px;
-          padding: 0.55rem 0.65rem;
-          font-weight: 700;
-          cursor: pointer;
-        }
-        .modeBtn.active {
-          background: #1f573d;
-          border-color: #1f573d;
-        }
-
-        h1 {
-          margin: 0;
-          font-size: clamp(2rem, 5vw, 3.2rem);
-          color: #ffffff;
-          font-family: "Baloo 2", cursive;
-          text-shadow: 0 4px 0 #2b68cb;
-          background: linear-gradient(90deg, #4f8cff, #ff7eb6);
-          border-radius: 18px;
-          padding: 0.3rem 0.6rem;
-        }
-
-        .subtitle {
-          margin: 0.7rem 0 0.7rem;
-          color: #2f4f87;
-          font-weight: 600;
-        }
-        .partsGrid {
-          display: grid;
-          grid-template-columns: repeat(10, minmax(68px, 1fr));
-          gap: 0.35rem;
-          margin-bottom: 0.65rem;
-          max-height: 180px;
-          overflow: auto;
-          padding: 0.3rem;
-          border: 2px dashed #c9d8ff;
-          border-radius: 12px;
-          background: #f8fbff;
-          width: 100%;
-          box-sizing: border-box;
-        }
-        .partCell {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.2rem;
-          font-size: 0.78rem;
-          color: #2f4f87;
-          background: #fff;
-          border: 1px solid #dbe7ff;
-          border-radius: 8px;
-          padding: 0.25rem;
-          cursor: pointer;
-        }
-        .partCell.current {
-          border: 2px solid #4f8cff;
-          background: #eaf2ff;
-        }
-        .partCell input {
-          width: 14px;
-          height: 14px;
-          pointer-events: none;
-        }
-
-        .progressWrap {
-          width: 100%;
-          height: 14px;
-          border-radius: 999px;
-          background: #e7eeff;
-          overflow: hidden;
-        }
-
-        .progressBar {
-          height: 100%;
-          background: linear-gradient(90deg, #65d3ff, #8b7cff);
-          transition: width 0.3s ease;
-        }
-
-        .progressText {
-          margin: 0.4rem 0 0.6rem;
-          color: #4a67a0;
-          font-weight: 600;
-        }
-
-        .wordBox {
-          font-family: "Baloo 2", cursive;
-          font-size: clamp(2rem, 6vw, 3.3rem);
-          color: #2e4f88;
-          margin-bottom: 0.7rem;
-          animation: bounce 1.5s ease-in-out infinite;
-        }
-
-        .choiceGrid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.7rem;
-          margin-bottom: 0.9rem;
-        }
-
-        .choiceBtn {
-          border: 3px solid #fff;
-          border-radius: 16px;
-          color: #fff;
-          font-size: 1.05rem;
-          font-weight: 700;
-          padding: 0.65rem 0.5rem;
-          cursor: pointer;
-          box-shadow: 0 8px 0 rgba(0, 0, 0, 0.15);
-          transition: transform 0.15s ease;
-        }
-        .choiceBtn.selected {
-          border: 2px solid red;
-        }
-        .optLabel {
-          font-weight: 900;
-        }
-
-        .choiceBtn:nth-child(1) { background: linear-gradient(180deg, #68d5ff, #4f8cff); }
-        .choiceBtn:nth-child(2) { background: linear-gradient(180deg, #ff97c9, #ff7eb6); }
-        .choiceBtn:nth-child(3) { background: linear-gradient(180deg, #ffc574, #ffab49); }
-        .choiceBtn:nth-child(4) { background: linear-gradient(180deg, #b3a4ff, #8f7cff); }
-
-        .choiceBtn:hover:enabled {
-          transform: translateY(-2px) scale(1.02);
-        }
-
-        .nextBtn {
-          border: 3px solid #fff;
-          border-radius: 14px;
-          padding: 0.45rem 1rem;
-          font-family: "Baloo 2", cursive;
-          font-size: 1.15rem;
-          color: #fff;
-          background: linear-gradient(180deg, #6f9dff, #4f8cff);
-          box-shadow: 0 7px 0 rgba(0, 0, 0, 0.15);
-          cursor: pointer;
-        }
-
-        .resultBox h2 {
-          margin: 0.3rem 0 0.4rem;
-          color: #2f4f88;
-          font-family: "Baloo 2", cursive;
-          font-size: 2rem;
-        }
-
-        .resultBox p {
-          margin-bottom: 0.9rem;
-          color: #3f5f96;
-          font-size: 1.2rem;
-        }
-        .wrongList {
-          margin: 0.4rem 0 1rem;
-          text-align: left;
-          border: 2px dashed #c9d8ff;
-          border-radius: 14px;
-          background: #f7fbff;
-          padding: 0.65rem;
-          max-height: 280px;
-          overflow: auto;
-        }
-        .wrongList h3 {
-          margin: 0 0 0.45rem;
-          color: #2f4f88;
-        }
-        .wrongItem {
-          border: 1px solid #d9e6ff;
-          border-radius: 10px;
-          background: #fff;
-          padding: 0.45rem 0.55rem;
-          margin-bottom: 0.4rem;
-        }
-        .wrongItem p {
-          margin: 0.2rem 0;
-          font-size: 0.96rem;
-        }
-        .bad {
-          color: #cc2e2e;
-          font-weight: 700;
-        }
-        .good {
-          color: #1f7a44;
-          font-weight: 700;
-        }
-        .allCorrect {
-          color: #2b7a46 !important;
-          font-weight: 700;
-        }
-
-        @media (max-width: 700px) {
-          .layout {
-            grid-template-columns: 1fr;
-          }
-          .choiceGrid {
-            grid-template-columns: 1fr;
-          }
-          .partsGrid {
-            grid-template-columns: repeat(5, minmax(58px, 1fr));
-          }
-        }
-
-        @keyframes popIn {
-          from { transform: scale(0.96); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-
-        @keyframes floatBg {
-          from { transform: translateY(0px); }
-          to { transform: translateY(-10px); }
-        }
-      `}</style>
     </main>
   );
 }

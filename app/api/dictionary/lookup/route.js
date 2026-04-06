@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
 import { normalizeMediaUrl } from "@/lib/media-url";
 import { buildAiImageUrl } from "@/lib/ai-image-url";
 import { getMatchingImageByWord } from "@/lib/matching-image-map";
@@ -42,6 +43,8 @@ export async function GET(request) {
         { status: 400 }
       );
     }
+
+    await ensureVocabularySchema(pool);
 
     const [dbRows] = await pool.query(
       `SELECT id, word, ipa, vietnamese_meaning, part_of_speech, example_sentence, example_sentence_vi,

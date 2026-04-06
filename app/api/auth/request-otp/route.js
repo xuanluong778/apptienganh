@@ -3,6 +3,7 @@ import pool from "@/lib/db";
 import { generateOtpCode, generateOtpToken, hashOtpCode } from "@/lib/auth";
 import { sendOtp } from "@/lib/otp-delivery";
 import { getSettingSync } from "@/lib/runtime-settings/cache";
+import { normalizePhoneForStorage } from "@/lib/phone-vn";
 
 function normalizeContact(type, value) {
   const t = String(type || "").toLowerCase();
@@ -10,8 +11,8 @@ function normalizeContact(type, value) {
     return { contactType: "email", contactValue: String(value || "").trim().toLowerCase() };
   }
   if (t === "phone") {
-    const digits = String(value || "").replace(/[^\d+]/g, "").trim();
-    return { contactType: "phone", contactValue: digits };
+    const phoneStored = normalizePhoneForStorage(value) || String(value || "").replace(/[^\d+]/g, "").trim();
+    return { contactType: "phone", contactValue: phoneStored };
   }
   return { contactType: "", contactValue: "" };
 }
@@ -95,16 +96,30 @@ export async function POST(request) {
       [otpToken, contactType, contactValue, hashOtpCode(otpCode), expiresAt]
     );
 
-    await sendOtp({ contactType, contactValue, otpCode });
+    let queued = false;
+    if (contactType === "email") {
+      const { tryEnqueueRegisterOtpEmail } = await import("@/lib/otp-queue/otp-register-mail");
+      queued = await tryEnqueueRegisterOtpEmail(contactValue, otpCode);
+    }
+    if (!queued) {
+      await sendOtp({ contactType, contactValue, otpCode });
+    }
+
     const allowDebugOtp =
       process.env.NODE_ENV !== "production" && getSettingSync("AUTH_SHOW_DEBUG_OTP") === "true";
 
+    const message =
+      contactType === "email" && queued
+        ? "Đã tiếp nhận. Mã OTP đang được gửi đến email (thường trong vài giây)."
+        : `Đã gửi OTP đến ${contactType === "email" ? "email" : "số điện thoại"}.`;
+
     return NextResponse.json({
       success: true,
-      message: `Đã gửi OTP đến ${contactType === "email" ? "gmail" : "số điện thoại"}.`,
+      message,
       data: {
         otp_token: otpToken,
         debug_otp: allowDebugOtp ? otpCode : undefined,
+        email_delivery: contactType === "email" ? (queued ? "queued" : "sync") : undefined,
       },
     });
   } catch (_error) {

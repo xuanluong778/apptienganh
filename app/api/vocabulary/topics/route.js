@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
 
 export async function GET(request) {
   try {
+    await ensureVocabularySchema(pool);
     const { searchParams } = new URL(request.url);
     const level = (searchParams.get("level") || "beginner").toLowerCase();
 

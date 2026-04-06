@@ -3,15 +3,17 @@ import pool from "@/lib/db";
 import { hashPassword, verifyOtpCode } from "@/lib/auth";
 import { setSessionOnResponse } from "@/lib/auth/create-session";
 import { createInitialSubscriptionForNewUser } from "@/lib/subscriptions/subscription-service";
+import { normalizePhoneForStorage, phoneLoginCandidates } from "@/lib/phone-vn";
 
 function normalizeContact(type, value, fallbackEmail) {
   const t = String(type || "").toLowerCase();
   if (t === "phone") {
+    const phoneStored = normalizePhoneForStorage(value) || String(value || "").replace(/[^\d+]/g, "").trim();
     return {
       contactType: "phone",
-      contactValue: String(value || "").replace(/[^\d+]/g, "").trim(),
+      contactValue: phoneStored,
       email: null,
-      phone: String(value || "").replace(/[^\d+]/g, "").trim(),
+      phone: phoneStored,
     };
   }
   const emailValue = String(value || fallbackEmail || "").trim().toLowerCase();
@@ -31,8 +33,37 @@ export async function POST(request) {
     const password = typeof body.password === "string" ? body.password : "";
     const otpToken = typeof body.otp_token === "string" ? body.otp_token.trim() : "";
     const otpCode = typeof body.otp_code === "string" ? body.otp_code.trim() : "";
-    const normalized = normalizeContact(body.contact_type, body.contact_value, emailFallback);
-    const { contactType, contactValue, email, phone } = normalized;
+    const phoneRaw = typeof body.phone === "string" ? body.phone : "";
+
+    /** Đăng ký mới: email + OTP email + SĐT cùng lúc */
+    const useEmailPhone =
+      emailFallback &&
+      phoneRaw &&
+      String(phoneRaw).replace(/[^\d+]/g, "").replace(/\D/g, "").length >= 9;
+
+    let contactType;
+    let contactValue;
+    let email;
+    let phone;
+
+    if (useEmailPhone) {
+      contactType = "email";
+      contactValue = emailFallback;
+      email = emailFallback;
+      phone = normalizePhoneForStorage(phoneRaw);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return NextResponse.json({ success: false, message: "Email không hợp lệ." }, { status: 400 });
+      }
+      if (!phone || phone.replace(/\D/g, "").length < 10) {
+        return NextResponse.json({ success: false, message: "Số điện thoại không hợp lệ." }, { status: 400 });
+      }
+    } else {
+      const normalized = normalizeContact(body.contact_type, body.contact_value, emailFallback);
+      contactType = normalized.contactType;
+      contactValue = normalized.contactValue;
+      email = normalized.email;
+      phone = normalized.phone;
+    }
 
     if (!name || !contactValue || !password || !otpToken || !otpCode) {
       return NextResponse.json(
@@ -73,21 +104,37 @@ export async function POST(request) {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     );
 
-    const [existing] = await pool.query(
-      contactType === "email"
-        ? "SELECT id FROM users WHERE email = ? LIMIT 1"
-        : "SELECT id FROM users WHERE phone = ? LIMIT 1",
-      [contactValue]
-    );
-
-    if (existing.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: `${contactType === "email" ? "Email" : "Số điện thoại"} đã được đăng ký.`,
-        },
-        { status: 409 }
+    if (useEmailPhone) {
+      const [byEmail] = await pool.query("SELECT id FROM users WHERE email = ? LIMIT 1", [email]);
+      if (byEmail.length > 0) {
+        return NextResponse.json({ success: false, message: "Email đã được đăng ký." }, { status: 409 });
+      }
+      const dupPhones = phoneLoginCandidates(phoneRaw);
+      const phMarks = dupPhones.map(() => "?").join(", ");
+      const [byPhone] = await pool.query(
+        `SELECT id FROM users WHERE phone IN (${phMarks}) LIMIT 1`,
+        dupPhones
       );
+      if (byPhone.length > 0) {
+        return NextResponse.json({ success: false, message: "Số điện thoại đã được đăng ký." }, { status: 409 });
+      }
+    } else {
+      const [existing] = await pool.query(
+        contactType === "email"
+          ? "SELECT id FROM users WHERE email = ? LIMIT 1"
+          : "SELECT id FROM users WHERE phone = ? LIMIT 1",
+        [contactValue]
+      );
+
+      if (existing.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `${contactType === "email" ? "Email" : "Số điện thoại"} đã được đăng ký.`,
+          },
+          { status: 409 }
+        );
+      }
     }
 
     const [otpRows] = await pool.query(
@@ -136,7 +183,7 @@ export async function POST(request) {
     const res = NextResponse.json(
       {
         success: true,
-        message: "Đăng ký thành công. Bạn đã được đăng nhập.",
+        message: "Đăng ký thành công! Chào mừng bạn — tài khoản đã sẵn sàng.",
         data: {
           id: result.insertId,
           name,

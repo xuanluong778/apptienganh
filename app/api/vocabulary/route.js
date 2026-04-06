@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { normalizeMediaUrl } from "@/lib/media-url";
 import { getSessionUserIdFromRequest } from "@/lib/http/ai-entitlement";
+import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
 
 export async function GET(request) {
   try {
+    await ensureVocabularySchema(pool);
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const limit = Math.min(200, Math.max(1, Number(searchParams.get("limit") || 24)));
@@ -59,9 +61,16 @@ export async function GET(request) {
         total: Number(countRows[0]?.total || 0),
       },
     });
-  } catch (_error) {
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+    const isConn = code === "ECONNREFUSED" || code === "ER_ACCESS_DENIED_ERROR" || code === "ENOTFOUND";
     return NextResponse.json(
-      { success: false, message: "Failed to fetch vocabulary." },
+      {
+        success: false,
+        message: isConn
+          ? "Không kết nối được database. Kiểm tra DB_HOST / DATABASE_URL trong .env."
+          : "Failed to fetch vocabulary.",
+      },
       { status: 500 }
     );
   }

@@ -27,16 +27,18 @@ export default function RootLayout({ children }) {
       <body className={fredoka.className}>
         <AppProviders>
           <GuestGateProvider>
-            <header className="kid-nav-wrap">
-              <div className="kid-nav-toolbar kid-nav-toolbar--main">
-                <KidMainNav />
-              </div>
+            <div className="kid-nav-sticky-block">
+              <header className="kid-nav-wrap">
+                <div className="kid-nav-toolbar kid-nav-toolbar--main">
+                  <KidMainNav />
+                </div>
+                <div className="kid-nav-upgrade-corner" aria-label="Nâng cấp tài khoản">
+                  <UpgradeMenu />
+                  <TrialCountdown placement="corner" />
+                </div>
+              </header>
               <DictionarySearchBar />
-              <div className="kid-nav-upgrade-corner" aria-label="Nâng cấp tài khoản">
-                <UpgradeMenu />
-                <TrialCountdown placement="corner" />
-              </div>
-            </header>
+            </div>
           </GuestGateProvider>
           <div className="page-content">
             {children}

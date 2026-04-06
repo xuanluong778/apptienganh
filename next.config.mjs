@@ -1,12 +1,9 @@
-import { fileURLToPath } from "node:url";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 
 /** @type {import('next').NextConfig} */
 const createConfig = (phase) => {
   const isDevServer = phase === PHASE_DEVELOPMENT_SERVER;
   return {
-    // Keep dev/build artifacts separated to avoid .next collisions.
-    distDir: isDevServer ? ".next-dev" : ".next",
     experimental: {
       instrumentationHook: true,
     },
@@ -14,18 +11,7 @@ const createConfig = (phase) => {
     allowedDevOrigins: isDevServer
       ? ["*.ngrok-free.app", "*.ngrok-free.dev", "*.ngrok.io", "*.ngrok.app", "*.loca.lt"]
       : undefined,
-    webpack: (config, { dev, dir }) => {
-      if (dev) {
-        // Persistent cache = faster restarts than memory-only; wipe with `npm run dev:clean` if corrupted.
-        config.cache = {
-          type: "filesystem",
-          buildDependencies: { config: [fileURLToPath(import.meta.url)] },
-          cacheDirectory: `${dir}/.webpack-cache`,
-          compression: "gzip",
-        };
-      }
-      return config;
-    },
+    // Không dùng webpack filesystem cache trong dev: trên Windows dễ lỗi "Cannot find module './xxxx.js'" khi chunk lệch.
   };
 };
 

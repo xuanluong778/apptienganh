@@ -45,7 +45,11 @@ export default function VocabularyPage() {
         } else {
           setItems([]);
           setTotal(0);
-          setLoadError("Không tải được danh sách từ vựng. Vui lòng thử lại.");
+          const hint =
+            typeof json.message === "string" && json.message.trim()
+              ? ` ${json.message.trim()}`
+              : "";
+          setLoadError(`Không tải được danh sách từ vựng.${hint} Vui lòng thử lại.`);
         }
       } catch (_error) {
         setItems([]);

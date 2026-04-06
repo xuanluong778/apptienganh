@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
+
+/** Tối đa số phần hiển thị (P1…P100); tránh hàng trăm nút và khối lượng quiz quá lớn. */
+const MAX_QUIZ_SECTIONS = 100;
+const SECTION_SIZE = 10;
+/** Lấy từ index nhanh, trộn trong Node — không dùng ORDER BY RAND() (rất chậm với ~10k dòng). */
+const POOL_FETCH_LIMIT = 1200;
 
 function shuffle(list) {
   const copy = [...list];
@@ -10,75 +17,104 @@ function shuffle(list) {
   return copy;
 }
 
+function displayMeaning(row) {
+  const w = String(row.word || "").trim();
+  const m = String(row.vietnamese_meaning || "").trim();
+  if (m) return m;
+  if (w) return `(Chưa có nghĩa TV) — ${w}`;
+  return "";
+}
+
 export async function GET(request) {
   try {
+    await ensureVocabularySchema(pool);
     const { searchParams } = new URL(request.url);
     const mode = String(searchParams.get("mode") || "1");
     const requestedSection = Number(searchParams.get("section") || 1);
-    const sectionSize = 10;
 
-    await pool.query(
-      "ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS vietnamese_meaning VARCHAR(255) NULL AFTER ipa"
-    );
+    const baseWordWhere = `word IS NOT NULL AND TRIM(word) <> ''`;
 
-    const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS total
-       FROM vocabulary
-       WHERE level = 'beginner'
-         AND word IS NOT NULL
-         AND TRIM(word) <> ''
-         AND vietnamese_meaning IS NOT NULL
-         AND TRIM(vietnamese_meaning) <> ''`
+    const [[beginnerCount]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM vocabulary WHERE level = 'beginner' AND ${baseWordWhere}`
     );
-    const totalWords = Number(countRows[0]?.total || 0);
+    let totalWords = Number(beginnerCount?.total || 0);
+    let levelSql = "level = ?";
+    let levelParams = ["beginner"];
+
     if (!totalWords) {
-      return NextResponse.json({ success: false, message: "No vocabulary data." }, { status: 404 });
+      const [[anyCount]] = await pool.query(
+        `SELECT COUNT(*) AS total FROM vocabulary WHERE ${baseWordWhere}`
+      );
+      totalWords = Number(anyCount?.total || 0);
+      levelSql = "1=1";
+      levelParams = [];
     }
 
-    const totalSections = Math.max(1, Math.ceil(totalWords / sectionSize));
+    if (!totalWords) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Chưa có từ vựng trong database. Vào Admin → Import vocabulary hoặc chạy seed/import SQL.",
+        },
+        { status: 404 }
+      );
+    }
+
+    const rawSections = Math.max(1, Math.ceil(totalWords / SECTION_SIZE));
+    const totalSections = Math.min(rawSections, MAX_QUIZ_SECTIONS);
     const section = Math.min(Math.max(1, requestedSection), totalSections);
-    const offset = (section - 1) * sectionSize;
+    const offset = (section - 1) * SECTION_SIZE;
 
     const [rows] = await pool.query(
       `SELECT id, word, ipa, vietnamese_meaning, example_sentence, question_text, audio_url
        FROM vocabulary
-       WHERE level = 'beginner'
-         AND word IS NOT NULL
-         AND TRIM(word) <> ''
-         AND vietnamese_meaning IS NOT NULL
-         AND TRIM(vietnamese_meaning) <> ''
+       WHERE ${levelSql} AND ${baseWordWhere}
        ORDER BY id ASC
        LIMIT ? OFFSET ?`,
-      [sectionSize, offset]
+      [...levelParams, SECTION_SIZE, offset]
     );
     if (!rows.length) {
-      return NextResponse.json({ success: false, message: "No words in this section." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: "Không có từ trong phần này. Chọn phần khác hoặc import thêm từ vựng." },
+        { status: 404 }
+      );
     }
 
-    const [poolRows] = await pool.query(
-      `SELECT word, vietnamese_meaning
+    const [poolAll] = await pool.query(
+      `SELECT word, vietnamese_meaning, ipa, audio_url
        FROM vocabulary
-       WHERE level = 'beginner'
-         AND word IS NOT NULL
-         AND TRIM(word) <> ''
-         AND vietnamese_meaning IS NOT NULL
-         AND TRIM(vietnamese_meaning) <> ''
-       ORDER BY RAND()
-       LIMIT 400`
+       WHERE ${levelSql} AND ${baseWordWhere}
+       ORDER BY id ASC
+       LIMIT ?`,
+      [...levelParams, POOL_FETCH_LIMIT]
     );
+    const poolRows = shuffle(poolAll).slice(0, Math.min(500, poolAll.length));
+
+    const wordMeta = new Map();
+    for (const r of poolAll) {
+      const w = String(r.word || "").trim();
+      if (!w) continue;
+      wordMeta.set(w.toLowerCase(), {
+        ipa: String(r.ipa || "").trim(),
+        audio_url: String(r.audio_url || "").trim(),
+      });
+    }
 
     const questions = [];
-    const optionPoolVn = poolRows.map((r) => r.vietnamese_meaning).filter(Boolean);
+    const optionPoolVn = poolRows.map((r) => displayMeaning(r)).filter(Boolean);
     const optionPoolEn = poolRows.map((r) => r.word).filter(Boolean);
 
     for (const item of rows) {
-      if (questions.length >= 10) break;
+      if (questions.length >= SECTION_SIZE) break;
       if (!item.word) continue;
 
+      const vn = displayMeaning(item);
+      if (!vn) continue;
+
       if (mode === "1") {
-        if (!item.vietnamese_meaning) continue;
-        const wrong = shuffle(optionPoolVn.filter((v) => v !== item.vietnamese_meaning)).slice(0, 3);
-        const options = shuffle([item.vietnamese_meaning, ...wrong]);
+        const wrong = shuffle(optionPoolVn.filter((v) => v !== vn)).slice(0, 3);
+        const options = shuffle([vn, ...wrong]);
         questions.push({
           id: item.id,
           mode,
@@ -87,30 +123,33 @@ export async function GET(request) {
           example_sentence: item.example_sentence || "",
           question_text: item.question_text || "",
           audio_url: item.audio_url || "",
-          correct_answer: item.vietnamese_meaning,
+          correct_answer: vn,
           options,
         });
       } else if (mode === "2") {
-        if (!item.vietnamese_meaning) continue;
         const wrong = shuffle(optionPoolEn.filter((v) => v !== item.word)).slice(0, 3);
-        const options = shuffle([item.word, ...wrong]);
+        const optionWords = shuffle([item.word, ...wrong]);
+        const options = optionWords.map((w) => {
+          const key = String(w || "").trim().toLowerCase();
+          const meta = wordMeta.get(key) || { ipa: "", audio_url: "" };
+          return { word: w, ipa: meta.ipa, audio_url: meta.audio_url };
+        });
         questions.push({
           id: item.id,
           mode,
-          prompt: item.vietnamese_meaning,
-          ipa: item.ipa || "",
+          prompt: vn,
+          ipa: "",
           example_sentence: item.example_sentence || "",
           question_text: item.question_text || "",
-          audio_url: item.audio_url || "",
+          audio_url: "",
           correct_answer: item.word,
           options,
         });
       } else {
-        if (!item.vietnamese_meaning) continue;
         questions.push({
           id: item.id,
           mode: "3",
-          prompt: item.vietnamese_meaning,
+          prompt: vn,
           ipa: item.ipa || "",
           example_sentence: item.example_sentence || "",
           question_text: item.question_text || "",
@@ -123,15 +162,26 @@ export async function GET(request) {
 
     return NextResponse.json({
       success: true,
-      data: questions.slice(0, sectionSize),
+      data: questions.slice(0, SECTION_SIZE),
       meta: {
         section,
-        section_size: sectionSize,
+        section_size: SECTION_SIZE,
         total_sections: totalSections,
         total_words: totalWords,
+        max_sections: MAX_QUIZ_SECTIONS,
       },
     });
-  } catch (_error) {
-    return NextResponse.json({ success: false, message: "Failed to create quiz round." }, { status: 500 });
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+    const isConn = code === "ECONNREFUSED" || code === "ER_ACCESS_DENIED_ERROR" || code === "ENOTFOUND";
+    return NextResponse.json(
+      {
+        success: false,
+        message: isConn
+          ? "Không kết nối được database. Kiểm tra cấu hình DB trong .env."
+          : "Failed to create quiz round.",
+      },
+      { status: 500 }
+    );
   }
 }

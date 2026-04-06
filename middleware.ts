@@ -8,7 +8,8 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/auth" || pathname.startsWith("/auth/")) return true;
   if (pathname.startsWith("/api/auth")) return true;
   if (pathname === "/api/billing/webhook") return true;
-  if (pathname === "/api/health" || pathname === "/api/health/db") return true;
+  // Mọi route kiểm tra sức khỏe (kể cả /api/health/db) — tránh VPS bản cũ sót từng path.
+  if (pathname === "/api/health" || pathname.startsWith("/api/health/")) return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname === "/favicon.ico") return true;
   if (pathname.startsWith("/uploads/")) return true;
@@ -63,5 +64,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Khớp mọi path trừ toàn bộ /_next/* (static, image, flight, HMR…) — tránh middleware chạm request chunk JS/CSS.
+  matcher: ["/((?!_next/).*)"],
 };

@@ -128,7 +128,7 @@ export default function BottomAccountDock() {
   };
 
   return (
-    <div className={styles.dock}>
+    <div className={styles.dock} data-app-bottom-dock>
       {open && (
         <div
           className={styles.backdrop}
