@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     const res = NextResponse.json({ success: true, user });
-    await setSessionOnResponse(res, result.userId);
+    await setSessionOnResponse(res, result.userId, request);
     return res;
   } catch (err) {
     console.error("[auth/otp/verify]", err);

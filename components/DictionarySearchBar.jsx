@@ -1,17 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function DictionarySearchBar() {
-  const router = useRouter();
   const [q, setQ] = useState("");
 
   function submit(e) {
     e.preventDefault();
     const word = String(q || "").trim();
     if (word.length < 2) return;
-    router.push(`/dictionary?q=${encodeURIComponent(word)}`);
+    window.location.href = `/dictionary?q=${encodeURIComponent(word)}`;
   }
 
   return (

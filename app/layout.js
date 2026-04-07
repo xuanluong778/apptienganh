@@ -1,19 +1,26 @@
 import "./globals.css";
-import { Fredoka } from "next/font/google";
-import DictionarySearchBar from "@/components/DictionarySearchBar";
+import { Oswald, Roboto } from "next/font/google";
 import AppProviders from "@/components/AppProviders";
 import GuestGateProvider from "@/components/GuestGateProvider";
+import DictionarySearchBar from "@/components/DictionarySearchBar";
 import KidMainNav from "@/components/KidMainNav";
 import TrialCountdown from "@/components/TrialCountdown";
 import UpgradeMenu from "@/components/billing/UpgradeMenu";
 import BottomAccountDock from "@/components/account/BottomAccountDock";
 
-const fredoka = Fredoka({
+const roboto = Roboto({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "700"],
   display: "swap",
-  preload: true,
-  adjustFontFallback: true,
+  preload: true
+});
+
+const oswald = Oswald({
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600", "700"],
+  display: "swap",
+  variable: "--font-heading",
+  preload: true
 });
 
 export const metadata = {
@@ -24,7 +31,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={fredoka.className}>
+      <body className={`${roboto.className} ${oswald.variable}`}>
         <AppProviders>
           <GuestGateProvider>
             <div className="kid-nav-sticky-block">

@@ -1,27 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthLoggedIn } from "@/hooks/useAuthLoggedIn";
 import { useGuestGate } from "@/components/GuestGateProvider";
 
 const NAV_LINKS = [
-  { href: "/", label: "Trang chủ" },
-  { href: "/lessons", label: "Bài học" },
-  { href: "/quiz", label: "Quiz" },
-  { href: "/matching", label: "Nối từ" },
-  { href: "/memory", label: "Ghi nhớ" },
-  { href: "/dashboard", label: "Tiến độ" },
-  { href: "/vocabulary", label: "Từ vựng" },
-  { href: "/dictionary", label: "Từ điển" },
+  { href: "/", label: "Trang chủ", icon: "🏠" },
+  { href: "/lessons", label: "Bài học", icon: "📘" },
+  { href: "/quiz", label: "Quiz", icon: "🧠" },
+  { href: "/pronunciation", label: "Phát Âm IPA", icon: "🎙️" },
+  { href: "/vocabulary", label: "Từ vựng", icon: "📚" },
 ];
 
 /** Khách vẫn vào được (khớp middleware + API public). */
-const GUEST_ALLOWED_HREFS = new Set(["/", "/quiz", "/matching", "/memory", "/vocabulary", "/dictionary"]);
+const GUEST_ALLOWED_HREFS = new Set(["/", "/quiz", "/pronunciation", "/vocabulary"]);
 
 export default function KidMainNav() {
+  const router = useRouter();
+  const pathname = usePathname();
   const { loggedIn } = useAuthLoggedIn();
   const { showLoginRequired } = useGuestGate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const onNavClick = useCallback(
     (e, href) => {
@@ -33,27 +34,68 @@ export default function KidMainNav() {
     [loggedIn, showLoginRequired]
   );
 
+  const goBack = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/");
+  }, [router]);
+
   return (
-    <nav className="kid-nav kid-nav--grow">
-      {NAV_LINKS.map((link) => (
+    <>
+      <div className="kid-mobile-head">
+        <button type="button" className="kid-mobile-iconBtn" onClick={goBack} aria-label="Quay lại">
+          ←
+        </button>
+        <div className="kid-mobile-title">Kids English</div>
+        <button
+          type="button"
+          className="kid-mobile-iconBtn"
+          aria-label="Mở menu"
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          ☰
+        </button>
+      </div>
+
+      <nav className={`kid-nav kid-nav--grow ${mobileOpen ? "kid-nav--mobileOpen" : ""}`}>
+        {NAV_LINKS.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`kid-nav-link ${pathname === link.href ? "kid-nav-link--active" : ""}`}
+            onClick={(e) => {
+              onNavClick(e, link.href);
+              setMobileOpen(false);
+            }}
+            prefetch={loggedIn !== false}
+          >
+            <span className="kid-nav-link-thumb" aria-hidden>
+              {link.icon}
+            </span>
+            <span className="kid-nav-link-label">{link.label}</span>
+            <span className="kid-nav-link-cta">HỌC NGAY</span>
+          </Link>
+        ))}
         <Link
-          key={link.href}
-          href={link.href}
-          className="kid-nav-link"
-          onClick={(e) => onNavClick(e, link.href)}
+          href="/admin"
+          className={`kid-nav-link kid-nav-link--admin ${pathname === "/admin" ? "kid-nav-link--active" : ""}`}
+          onClick={(e) => {
+            onNavClick(e, "/admin");
+            setMobileOpen(false);
+          }}
           prefetch={loggedIn !== false}
         >
-          {link.label}
+          <span className="kid-nav-link-thumb" aria-hidden>
+            ⚙️
+          </span>
+          <span className="kid-nav-link-label">Quản trị</span>
+          <span className="kid-nav-link-cta">HỌC NGAY</span>
         </Link>
-      ))}
-      <Link
-        href="/admin"
-        className="kid-nav-link kid-nav-link--admin"
-        onClick={(e) => onNavClick(e, "/admin")}
-        prefetch={loggedIn !== false}
-      >
-        Quản trị
-      </Link>
-    </nav>
+      </nav>
+    </>
   );
 }

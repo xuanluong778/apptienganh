@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { startPatientSpeechRecognition } from "@/lib/browser-patient-speech";
 import "./quiz.css";
 
 export default function QuizPage() {
@@ -17,7 +18,15 @@ export default function QuizPage() {
   const [wrongAnswers, setWrongAnswers] = useState([]);
   const [completedParts, setCompletedParts] = useState({});
   const [quizError, setQuizError] = useState("");
+  /** Sau khi chọn sai (MCQ): lần bấm tiếp theo mới qua câu sau */
+  const [wrongReveal, setWrongReveal] = useState(false);
+  /** Mode 3: sau «Nộp đáp án» — "wrong" | "correct"; sang câu sau khi bấm Câu tiếp */
+  const [mode3Feedback, setMode3Feedback] = useState(null);
+  const [m3Recording, setM3Recording] = useState(false);
+  const m3RecRef = useRef(null);
   const completionKey = "quiz-completed-parts-v1";
+
+  const normAns = (s) => String(s ?? "").trim().toLowerCase();
 
   const markPartCompleted = (part) => {
     setCompletedParts((prev) => {
@@ -36,6 +45,13 @@ export default function QuizPage() {
     setTextAnswer("");
     setShowResult(false);
     setWrongAnswers([]);
+    setWrongReveal(false);
+    setMode3Feedback(null);
+    setM3Recording(false);
+    try {
+      m3RecRef.current?.abort?.();
+    } catch (_e) {}
+    m3RecRef.current = null;
   };
 
   const loadRound = async (targetMode, targetSection) => {
@@ -117,42 +133,118 @@ export default function QuizPage() {
   const getChoiceWord = (choice) =>
     choice && typeof choice === "object" && choice.word !== undefined ? choice.word : choice;
 
+  const isChoiceCorrect = (choice) => {
+    if (!currentQuestion) return false;
+    return normAns(getChoiceWord(choice)) === normAns(currentQuestion.correct_answer);
+  };
+
   const handleChoiceClick = (choice) => {
-    if (!currentQuestion) {
+    if (!currentQuestion || wrongReveal) {
       return;
     }
     setSelected(getChoiceWord(choice));
   };
 
-  const handleSubmitText = () => {
-    if (!currentQuestion) return;
-    const userAnswer = textAnswer.trim().toLowerCase();
-    setSelected(userAnswer);
+  const submitMode3Answer = () => {
+    if (!currentQuestion || mode !== "3" || mode3Feedback) return;
+    const raw = textAnswer.trim();
+    if (!raw) return;
+    const correct = normAns(currentQuestion.correct_answer);
+    const picked = normAns(raw);
+    if (picked === correct) {
+      setMode3Feedback("correct");
+    } else {
+      setSelected(raw);
+      setMode3Feedback("wrong");
+    }
   };
 
   const startSpeechInput = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-    if (!SpeechRecognition) return;
-    const rec = new SpeechRecognition();
-    rec.lang = "en-US";
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.start();
-    rec.onresult = (event) => {
-      setTextAnswer(event.results?.[0]?.[0]?.transcript || "");
-    };
+    if (!currentQuestion || mode !== "3" || wrongReveal || mode3Feedback) return;
+    try {
+      m3RecRef.current?.abort?.();
+    } catch (_e) {}
+    m3RecRef.current = null;
+    const ctrl = startPatientSpeechRecognition({
+      lang: "en-US",
+      silenceMs: 1600,
+      maxMs: 20000,
+      onDone: (text) => {
+        setM3Recording(false);
+        m3RecRef.current = null;
+        const t = String(text || "").trim();
+        if (t) setTextAnswer(t);
+      },
+      onError: () => {
+        setM3Recording(false);
+        m3RecRef.current = null;
+      },
+      onInterim: (t) => {
+        if (t && String(t).trim()) setTextAnswer(String(t).trim());
+      },
+    });
+    if (ctrl) {
+      m3RecRef.current = ctrl;
+      setM3Recording(true);
+    }
   };
 
+  const stopSpeechInput = () => {
+    if (m3RecRef.current) {
+      try {
+        m3RecRef.current.stop();
+      } catch (_e) {}
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      try {
+        m3RecRef.current?.abort?.();
+      } catch (_e) {}
+    };
+  }, []);
+
   const goNext = () => {
-    if (!selected || !currentQuestion) {
+    if (!currentQuestion) {
       return;
     }
 
-    const correct = String(currentQuestion.correct_answer || "").trim().toLowerCase();
-    const picked = String(selected).trim().toLowerCase();
-    if (picked && picked === correct) {
-      setScore((prev) => prev + 1);
-    } else {
+    if (mode === "3") {
+      if (mode3Feedback) {
+        try {
+          m3RecRef.current?.abort?.();
+        } catch (_e) {}
+        m3RecRef.current = null;
+        setM3Recording(false);
+        if (mode3Feedback === "correct") {
+          setScore((prev) => prev + 1);
+        } else {
+          setWrongAnswers((prev) => [
+            ...prev,
+            {
+              id: currentQuestion.id,
+              prompt: currentQuestion.prompt || "",
+              yourAnswer: String(selected || textAnswer || "").trim() || "(bỏ trống)",
+              correctAnswer: String(currentQuestion.correct_answer || "").trim(),
+            },
+          ]);
+        }
+        setMode3Feedback(null);
+        setSelected(null);
+        if (isLastQuestion) {
+          markPartCompleted(section);
+          setShowResult(true);
+          return;
+        }
+        setCurrent((prev) => prev + 1);
+        setTextAnswer("");
+        return;
+      }
+      return;
+    }
+
+    if (wrongReveal) {
       setWrongAnswers((prev) => [
         ...prev,
         {
@@ -162,17 +254,37 @@ export default function QuizPage() {
           correctAnswer: String(currentQuestion.correct_answer || "").trim(),
         },
       ]);
-    }
-
-    if (isLastQuestion) {
-      markPartCompleted(section);
-      setShowResult(true);
+      setWrongReveal(false);
+      if (isLastQuestion) {
+        markPartCompleted(section);
+        setShowResult(true);
+        return;
+      }
+      setCurrent((prev) => prev + 1);
+      setSelected(null);
+      setTextAnswer("");
       return;
     }
 
-    setCurrent((prev) => prev + 1);
-    setSelected(null);
-    setTextAnswer("");
+    if (selected == null || selected === "") return;
+
+    const correct = normAns(currentQuestion.correct_answer);
+    const picked = normAns(selected);
+
+    if (picked === correct) {
+      setScore((prev) => prev + 1);
+      if (isLastQuestion) {
+        markPartCompleted(section);
+        setShowResult(true);
+        return;
+      }
+      setCurrent((prev) => prev + 1);
+      setSelected(null);
+      setTextAnswer("");
+      return;
+    }
+
+    setWrongReveal(true);
   };
 
   const restartQuiz = () => {
@@ -245,27 +357,45 @@ export default function QuizPage() {
         <h1>Kids Quiz Time</h1>
         <p className="subtitle">Phần thi {section}/{totalSections} - mỗi phần 10 từ</p>
 
-        <div className="partsGrid">
-          {Array.from({ length: totalSections }).map((_, idx) => {
-            const part = idx + 1;
-            const isCurrent = part === section;
-            const isDone = Boolean(completedParts[part]);
-            return (
-              <button
-                key={part}
-                type="button"
-                className={`partCell ${isCurrent ? "current" : ""}`}
-                onClick={() => setSection(part)}
-                title={`Phần thi ${part}`}
-              >
-                <span
-                  className={`partMark ${isDone || isCurrent ? "partMark--on" : ""}`}
-                  aria-hidden
-                />
-                <span>P{part}</span>
-              </button>
-            );
-          })}
+        <div className="partsToolbar">
+          <button
+            type="button"
+            className="partsArrow"
+            onClick={() => setSection((s) => Math.max(1, s - 1))}
+            disabled={section <= 1}
+            aria-label="Phần trước"
+          >
+            ◀
+          </button>
+          <label className="partsSelectWrap">
+            <span className="sr-only">Chọn phần thi</span>
+            <select
+              className="partsSelect"
+              value={section}
+              onChange={(e) => setSection(Number(e.target.value))}
+              aria-label="Danh sách phần P1 đến P60"
+            >
+              {Array.from({ length: totalSections }).map((_, idx) => {
+                const part = idx + 1;
+                const done = Boolean(completedParts[part]);
+                return (
+                  <option key={part} value={part}>
+                    Phần P{part}
+                    {done ? " ✓" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="partsArrow"
+            onClick={() => setSection((s) => Math.min(totalSections, s + 1))}
+            disabled={section >= totalSections}
+            aria-label="Phần sau"
+          >
+            ▶
+          </button>
         </div>
 
         {loading ? (
@@ -298,14 +428,14 @@ export default function QuizPage() {
             </p>
 
             <div className="wordBox">{currentQuestion?.prompt}</div>
-            {mode !== "2" ? <p className="subtitle">{currentQuestion?.ipa || ""}</p> : null}
-            {mode !== "2" ? (
+            {mode === "1" ? <p className="subtitle">{currentQuestion?.ipa || ""}</p> : null}
+            {mode === "1" ? (
               <>
                 <p className="subtitle">{currentQuestion?.question_text || ""}</p>
                 <p className="subtitle">{currentQuestion?.example_sentence || ""}</p>
               </>
             ) : null}
-            {mode !== "2" ? (
+            {mode === "1" ? (
               <button type="button" className="nextBtn nextBtn--play" onClick={playCurrentWord}>
                 🔊 Play
               </button>
@@ -318,15 +448,24 @@ export default function QuizPage() {
                     const word = getChoiceWord(choice);
                     const ipa = choice && typeof choice === "object" ? choice.ipa || "" : "";
                     const isSelected = selected === word;
+                    const showCorrect = wrongReveal && isChoiceCorrect(choice);
+                    const showWrongPick = wrongReveal && isSelected && !isChoiceCorrect(choice);
                     let btnClass = "choiceBtn choiceBtn--block";
-                    if (isSelected) btnClass += " selected";
+                    if (showCorrect) btnClass += " choiceBtn--correctReveal";
+                    else if (showWrongPick) btnClass += " choiceBtn--wrongPick";
+                    else if (isSelected && !wrongReveal) btnClass += " selected";
 
                     return (
                       <div
                         className="choiceCell"
                         key={`${current}-${index}-${String(word ?? "").slice(0, 48)}`}
                       >
-                        <button type="button" className={btnClass} onClick={() => handleChoiceClick(choice)}>
+                        <button
+                          type="button"
+                          className={btnClass}
+                          onClick={() => handleChoiceClick(choice)}
+                          disabled={wrongReveal}
+                        >
                           <span className="choiceBtn-top">
                             <span className="optLabel">{optionLabels[index] || "?"}.</span>
                             <span className="choiceWord-text">{word}</span>
@@ -353,9 +492,13 @@ export default function QuizPage() {
                 <div className="choiceGrid">
                   {(currentQuestion?.options || []).map((choice, index) => {
                     const isSelected = selected === choice;
+                    const showCorrect = wrongReveal && isChoiceCorrect(choice);
+                    const showWrongPick = wrongReveal && isSelected && !isChoiceCorrect(choice);
 
                     let className = "choiceBtn";
-                    if (isSelected) className += " selected";
+                    if (showCorrect) className += " choiceBtn--correctReveal";
+                    else if (showWrongPick) className += " choiceBtn--wrongPick";
+                    else if (isSelected && !wrongReveal) className += " selected";
 
                     return (
                       <button
@@ -363,6 +506,7 @@ export default function QuizPage() {
                         type="button"
                         className={className}
                         onClick={() => handleChoiceClick(choice)}
+                        disabled={wrongReveal}
                       >
                         <span className="optLabel">{optionLabels[index] || "?"}.</span> {choice}
                       </button>
@@ -373,23 +517,100 @@ export default function QuizPage() {
             ) : (
               <div className="choiceGrid" style={{ gridTemplateColumns: "1fr" }}>
                 <input
-                  className="choiceBtn"
+                  className={`choiceBtn choiceInputPlain ${mode3Feedback === "wrong" ? "choiceInputPlain--wrongLine" : ""}`}
                   value={textAnswer}
                   onChange={(e) => setTextAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    if (!mode3Feedback && textAnswer.trim()) {
+                      submitMode3Answer();
+                    }
+                  }}
                   placeholder="Nhập câu trả lời tiếng Anh..."
-                  disabled={selected !== null}
+                  disabled={Boolean(mode3Feedback)}
                 />
-                <button type="button" className="choiceBtn" onClick={startSpeechInput}>
-                  🎤 Ghi câu trả lời
+                {mode3Feedback ? (
+                  <div className="dictationCorrectLine">
+                    <p>
+                      Đáp án đúng: <strong>{String(currentQuestion?.correct_answer || "").trim()}</strong>
+                    </p>
+                    {mode3Feedback === "wrong" ? (
+                      <p className="dictationInlineFeedback dictationInlineFeedback--wrong">😅 Ôi sai rồi</p>
+                    ) : null}
+                    {mode3Feedback === "correct" ? (
+                      <p className="dictationInlineFeedback dictationInlineFeedback--great">⭐ Bạn quá xuất sắc!</p>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="dictationReadBtn"
+                      onClick={() => speakEnglish(String(currentQuestion?.correct_answer || "").trim())}
+                    >
+                      🔊 Đọc từ
+                    </button>
+                  </div>
+                ) : null}
+                {mode3Feedback ? (
+                  <div className="dictationRevealInfo">
+                    {currentQuestion?.ipa ? <p>{currentQuestion.ipa}</p> : null}
+                    {currentQuestion?.question_text ? <p>{currentQuestion.question_text}</p> : null}
+                    {currentQuestion?.example_sentence ? <p>{currentQuestion.example_sentence}</p> : null}
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  className="choiceBtn choiceBtn--recordAnswer"
+                  onClick={m3Recording ? stopSpeechInput : startSpeechInput}
+                  disabled={Boolean(mode3Feedback)}
+                >
+                  {m3Recording ? "⏹ Dừng ghi" : "🎤 Ghi câu trả lời"}
                 </button>
-                <button type="button" className="choiceBtn" onClick={handleSubmitText}>
+                <button
+                  type="button"
+                  className="choiceBtn choiceBtn--submitAnswer"
+                  onClick={submitMode3Answer}
+                  disabled={Boolean(mode3Feedback) || !textAnswer.trim()}
+                >
                   ✅ Nộp đáp án
                 </button>
               </div>
             )}
 
-            <button type="button" className="nextBtn" onClick={goNext}>
-              {isLastQuestion ? "Hoàn thành" : "Câu tiếp"}
+            {wrongReveal && mode !== "3" ? (
+              <div className="quizFeedbackWrong" role="status">
+                <span className="quizFeedbackWrong-emoji" aria-hidden>
+                  😢
+                </span>
+                <p className="quizFeedbackWrong-text">Ôi!! Sai mất rồi</p>
+              </div>
+            ) : null}
+            {mode === "3" && !mode3Feedback ? (
+              <p className="subtitle" style={{ marginTop: "0.35rem", marginBottom: "0.5rem" }}>
+                Ghi âm hoặc gõ đáp án, bấm «Nộp đáp án», rồi bấm nút xanh để qua câu sau.
+              </p>
+            ) : null}
+
+            <button
+              type="button"
+              className="nextBtn"
+              onClick={goNext}
+              disabled={mode === "3" ? !mode3Feedback : false}
+            >
+              {mode === "3"
+                ? mode3Feedback
+                  ? isLastQuestion
+                    ? "Xem kết quả"
+                    : "Câu tiếp theo"
+                  : isLastQuestion
+                  ? "Hoàn thành"
+                  : "Câu tiếp"
+                : wrongReveal
+                ? isLastQuestion
+                  ? "Xem kết quả"
+                  : "Câu tiếp theo"
+                : isLastQuestion
+                ? "Hoàn thành"
+                : "Câu tiếp"}
             </button>
           </>
         ) : (

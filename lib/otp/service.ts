@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import pool from "@/lib/db";
+import { ensureUsersAuthColumns } from "@/lib/auth/ensure-verification-schema";
 import { hashOtpCode, verifyOtpCode, hashPassword } from "@/lib/auth";
 import { sendLoginOtp } from "@/lib/otp-delivery";
 import { ensureOtpCodesTable } from "./ensure-table";
@@ -11,16 +12,7 @@ const OTP_EXPIRES_MINUTES = 5;
 export const MAX_OTP_GUESSES = 5;
 
 async function ensureUserSchemaPatches(): Promise<void> {
-  try {
-    await pool.query("ALTER TABLE users MODIFY COLUMN email VARCHAR(255) NULL");
-  } catch {
-    /* ignore */
-  }
-  try {
-    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NULL UNIQUE AFTER email");
-  } catch {
-    /* ignore */
-  }
+  await ensureUsersAuthColumns(pool);
 }
 
 function generateSixDigitOtp(): string {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { generateSessionToken } from "@/lib/auth";
+import { resolveCookieSecure } from "@/lib/auth/resolve-cookie-secure";
 
 export const SESSION_COOKIE_NAME = "session_token";
 export const SESSION_DAYS = 7;
@@ -12,18 +13,22 @@ export type SessionUser = {
   phone: string | null;
 };
 
-export function sessionCookieOptions(expiresAt: Date) {
+export function sessionCookieOptions(expiresAt: Date, secure: boolean) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     path: "/",
     expires: expiresAt,
   };
 }
 
 /** Inserts session row and sets httpOnly cookie on the response. */
-export async function setSessionOnResponse(response: NextResponse, userId: number): Promise<string> {
+export async function setSessionOnResponse(
+  response: NextResponse,
+  userId: number,
+  request?: Pick<Request, "headers">
+): Promise<string> {
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   await pool.query("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (?, ?, ?)", [
@@ -31,7 +36,8 @@ export async function setSessionOnResponse(response: NextResponse, userId: numbe
     token,
     expiresAt,
   ]);
-  response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions(expiresAt));
+  const secure = resolveCookieSecure(request);
+  response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions(expiresAt, secure));
   return token;
 }
 

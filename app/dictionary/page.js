@@ -1,635 +1,435 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { evaluatePronunciation } from "@/lib/client-pronunciation-eval";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { startPatientSpeechRecognition } from "@/lib/browser-patient-speech";
+import { evaluatePronunciation } from "@/lib/client-pronunciation-eval";
 
-function speakEnglish(text, lang) {
-  const t = String(text || "").trim();
-  if (!t) return;
-  try {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(t);
-    u.lang = lang === "uk" ? "en-GB" : "en-US";
-    u.rate = 0.9;
-    window.speechSynthesis.speak(u);
-  } catch (_e) {}
+function speakEnglish(text, rate = 0.9) {
+  if (typeof window === "undefined" || !text) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  u.rate = rate;
+  window.speechSynthesis.speak(u);
 }
 
-function playOrSpeak(url, text, accent) {
-  const u = String(url || "").trim();
-  if (u) {
-    const audio = new Audio(u);
-    audio.play().catch(() => speakEnglish(text, accent));
-  } else {
-    speakEnglish(text, accent);
-  }
+function toVietnamesePos(pos) {
+  const p = String(pos || "").toLowerCase();
+  if (p.includes("noun")) return "Danh từ";
+  if (p.includes("verb")) return "Động từ";
+  if (p.includes("adjective")) return "Tính từ";
+  if (p.includes("adverb")) return "Trạng từ";
+  return p ? p : "Từ loại";
 }
 
-function DictionaryLookupContent() {
-  const searchParams = useSearchParams();
-  const qParam = String(searchParams.get("q") || "").trim();
+export default function DictionaryLookupPage() {
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [data, setData] = useState(null);
-  const [showVi, setShowVi] = useState(false);
-  const [recordingId, setRecordingId] = useState(null);
-  const [speechResult, setSpeechResult] = useState({});
+  const [entry, setEntry] = useState(null);
+  const [viMeaning, setViMeaning] = useState("");
+  const [translating, setTranslating] = useState(false);
+  const [speechResultWord, setSpeechResultWord] = useState(null);
+  const [speechResultSentence, setSpeechResultSentence] = useState(null);
+  const [recordingMode, setRecordingMode] = useState("");
+  const [recordingHint, setRecordingHint] = useState("");
   const recognitionRef = useRef(null);
+  const azureTokenRef = useRef(null);
+
+  const qFromUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(new URLSearchParams(window.location.search).get("q") || "").trim();
+  }, []);
 
   useEffect(() => {
-    if (!qParam || qParam.length < 2) {
-      setData(null);
-      setError("");
-      return;
-    }
+    setQuery(qFromUrl);
+  }, [qFromUrl]);
+
+  useEffect(() => {
+    if (!qFromUrl || qFromUrl.length < 2) return;
     let cancelled = false;
+
     async function run() {
       setLoading(true);
       setError("");
-      setData(null);
-      setShowVi(false);
-      setSpeechResult({});
+      setEntry(null);
+      setViMeaning("");
+      setSpeechResultWord(null);
+      setSpeechResultSentence(null);
+      setRecordingHint("");
       try {
-        const res = await fetch(`/api/dictionary/lookup?q=${encodeURIComponent(qParam)}`, {
+        const res = await fetch(`/api/dictionary/lookup?q=${encodeURIComponent(qFromUrl)}`, {
           cache: "no-store",
         });
         const json = await res.json();
         if (cancelled) return;
-        if (!res.ok || !json.success) {
-          setError(json.message || "Không tra được từ này.");
+        if (!res.ok || !json?.success) {
+          setError(String(json?.message || "Không tra cứu được từ điển."));
+          setLoading(false);
           return;
         }
-        setData(json.data);
-      } catch (_e) {
-        if (!cancelled) setError("Lỗi mạng. Thử lại sau.");
+        setEntry(json.data || null);
+      } catch (_error) {
+        if (!cancelled) setError("Lỗi kết nối. Vui lòng thử lại.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
+
     run();
     return () => {
       cancelled = true;
     };
-  }, [qParam]);
+  }, [qFromUrl]);
 
-  const item = data
-    ? {
-        id: data.id ?? `lookup-${data.word}`,
-        word: data.word,
-        ipa_uk: data.ipa_uk,
-        ipa_us: data.ipa_us,
-        audio_uk: data.audio_uk,
-        audio_us: data.audio_us,
-        part_of_speech: data.part_of_speech,
-        part_of_speech_vi: data.part_of_speech_vi,
-        example_sentence: data.example_sentence,
-        example_sentence_vi: data.example_sentence_vi,
-        example_sentence_ipa: data.example_sentence_ipa,
-        vietnamese_meaning: data.vietnamese_meaning,
-        question_text: data.question_text,
-        image_url: data.image_url,
-        example_audio_url: data.example_audio_url,
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.abort?.();
+      } catch (_error) {}
+    };
+  }, []);
+
+  async function handleTranslate() {
+    if (!entry?.word) return;
+    setTranslating(true);
+    try {
+      const text = entry.definition
+        ? `${entry.word}: ${entry.definition}`
+        : `What does "${entry.word}" mean in Vietnamese?`;
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
+        setViMeaning("Chưa dịch được lúc này. Vui lòng thử lại.");
+      } else {
+        setViMeaning(String(json.data?.translated || "").trim());
       }
-    : null;
+    } catch (_error) {
+      setViMeaning("Lỗi kết nối khi dịch.");
+    } finally {
+      setTranslating(false);
+    }
+  }
 
-  function startRecordWord() {
-    if (!item) return;
-    recognitionRef.current?.abort?.();
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-    if (!SpeechRecognition) {
-      setSpeechResult((prev) => ({
-        ...prev,
-        [item.id]: { score: 0, transcript: "", message: "Trình duyệt không hỗ trợ ghi âm." },
-      }));
+  async function getAzureToken() {
+    const cached = azureTokenRef.current;
+    if (cached && Date.now() - cached.createdAt < 9 * 60 * 1000) return cached;
+    const res = await fetch("/api/pronunciation/token", { cache: "no-store" });
+    const json = await res.json();
+    if (!res.ok || !json?.success || !json?.data?.token || !json?.data?.region) return null;
+    const next = {
+      token: String(json.data.token),
+      region: String(json.data.region),
+      createdAt: Date.now(),
+    };
+    azureTokenRef.current = next;
+    return next;
+  }
+
+  async function recognizeWithAzure(target, isSentence) {
+    const auth = await getAzureToken();
+    if (!auth) return null;
+    const sdk = await import("microsoft-cognitiveservices-speech-sdk");
+    const speechConfig = sdk.SpeechConfig.fromAuthorizationToken(auth.token, auth.region);
+    speechConfig.speechRecognitionLanguage = "en-US";
+    speechConfig.setProperty(sdk.PropertyId.Speech_SegmentationSilenceTimeoutMs, "2800");
+    speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "2800");
+    const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput();
+    const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+    const paConfig = new sdk.PronunciationAssessmentConfig(
+      String(target || ""),
+      sdk.PronunciationAssessmentGradingSystem.HundredMark,
+      sdk.PronunciationAssessmentGranularity.Phoneme,
+      true
+    );
+    paConfig.enableProsodyAssessment = Boolean(isSentence);
+    paConfig.applyTo(recognizer);
+
+    return new Promise((resolve, reject) => {
+      recognizer.recognizeOnceAsync(
+        (result) => {
+          try {
+            if (result.reason !== sdk.ResultReason.RecognizedSpeech) {
+              recognizer.close();
+              resolve(null);
+              return;
+            }
+            const pa = sdk.PronunciationAssessmentResult.fromResult(result);
+            const score = Math.max(0, Math.round(Number(pa?.pronunciationScore || 0)));
+            const transcript = String(result?.text || "").trim();
+            const local = evaluatePronunciation(transcript, target, {
+              isSentence,
+              expectedIpaText: entry?.phonetic || "",
+            });
+            recognizer.close();
+            resolve({
+              score,
+              message: local.message,
+              details: local.details || `Bạn đọc: "${transcript || "..."}"`,
+            });
+          } catch (error) {
+            recognizer.close();
+            reject(error);
+          }
+        },
+        (error) => {
+          recognizer.close();
+          reject(error);
+        }
+      );
+    });
+  }
+
+  async function startRecord(targetText, mode) {
+    try {
+      recognitionRef.current?.abort?.();
+    } catch (_error) {}
+    if (recordingMode === mode && recognitionRef.current) {
+      recognitionRef.current.stop();
       return;
     }
-    setRecordingId(item.id);
+    setRecordingMode(mode);
+    setRecordingHint("Đang nghe... bấm lại để dừng.");
+
+    try {
+      const cloud = await recognizeWithAzure(targetText, mode === "sentence");
+      if (cloud) {
+        setRecordingMode("");
+        setRecordingHint("");
+        if (mode === "sentence") setSpeechResultSentence(cloud);
+        else setSpeechResultWord(cloud);
+        return;
+      }
+    } catch (_error) {}
+
     const ctrl = startPatientSpeechRecognition({
       lang: "en-US",
-      silenceMs: 2800,
-      maxMs: 28000,
-      onDone: (transcript) => {
-        const evaluation = evaluatePronunciation(transcript, item.word, {
-          isSentence: false,
-          expectedIpaText: item.ipa_us || item.ipa_uk || "",
-        });
-        setSpeechResult((prev) => ({
-          ...prev,
-          [item.id]: { ...evaluation, transcript },
-        }));
-        setRecordingId(null);
+      silenceMs: 1600,
+      maxMs: 15000,
+      onInterim: (text) => setRecordingHint(text ? `Đang nghe: ${text}` : "Đang nghe... bấm lại để dừng."),
+      onDone: (spoken) => {
+        setRecordingMode("");
+        setRecordingHint("");
         recognitionRef.current = null;
+        const score = evaluatePronunciation(spoken, targetText, {
+          isSentence: mode === "sentence",
+          expectedIpaText: entry?.phonetic || "",
+        });
+        if (mode === "sentence") setSpeechResultSentence(score);
+        else setSpeechResultWord(score);
       },
       onError: () => {
-        setSpeechResult((prev) => ({
-          ...prev,
-          [item.id]: { score: 0, transcript: "", message: "Lỗi ghi âm." },
-        }));
-        setRecordingId(null);
+        setRecordingMode("");
+        setRecordingHint("");
         recognitionRef.current = null;
+        const fallback = {
+          score: 0,
+          message: "Chưa ghi âm được",
+          details: "Cho phép micro và thử lại.",
+        };
+        if (mode === "sentence") setSpeechResultSentence(fallback);
+        else setSpeechResultWord(fallback);
       },
     });
     if (!ctrl) {
-      recognitionRef.current = null;
+      setRecordingMode("");
+      setRecordingHint("");
+      const fallback = {
+        score: 0,
+        message: "Trình duyệt không hỗ trợ ghi âm",
+        details: "Hãy dùng Chrome hoặc Edge.",
+      };
+      if (mode === "sentence") setSpeechResultSentence(fallback);
+      else setSpeechResultWord(fallback);
       return;
     }
     recognitionRef.current = ctrl;
   }
-
-  function startRecordSentence() {
-    if (!item) return;
-    const key = `sentence-${item.id}`;
-    recognitionRef.current?.abort?.();
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-    if (!SpeechRecognition) {
-      setSpeechResult((prev) => ({
-        ...prev,
-        [key]: { score: 0, transcript: "", message: "Trình duyệt không hỗ trợ ghi âm." },
-      }));
-      return;
-    }
-    setRecordingId(key);
-    const ctrl = startPatientSpeechRecognition({
-      lang: "en-US",
-      silenceMs: 3200,
-      maxMs: 32000,
-      onDone: (transcript) => {
-        const evaluation = evaluatePronunciation(transcript, item.example_sentence || "", {
-          isSentence: true,
-          expectedIpaText: item.example_sentence_ipa || "",
-        });
-        setSpeechResult((prev) => ({
-          ...prev,
-          [key]: { ...evaluation, transcript },
-        }));
-        setRecordingId(null);
-        recognitionRef.current = null;
-      },
-      onError: () => {
-        setSpeechResult((prev) => ({
-          ...prev,
-          [key]: { score: 0, transcript: "", message: "Lỗi ghi âm." },
-        }));
-        setRecordingId(null);
-        recognitionRef.current = null;
-      },
-    });
-    if (!ctrl) {
-      recognitionRef.current = null;
-      return;
-    }
-    recognitionRef.current = ctrl;
-  }
-
-  const sameIpa = item && String(item.ipa_uk) === String(item.ipa_us);
-  const diffAudio =
-    item &&
-    String(item.audio_uk || "").trim() &&
-    String(item.audio_us || "").trim() &&
-    String(item.audio_uk) !== String(item.audio_us);
-  const showBothAccents = item && (!sameIpa || diffAudio);
 
   return (
-    <main className="page">
-      <h1 className="title">Tra từ điển</h1>
-      <p className="sub">
-        Nhập từ ở thanh tìm kiếm phía trên. Nghe phát âm Anh Anh / Anh Mỹ, xem ví dụ và luyện đọc.
-      </p>
+    <main className="dict-page">
+      <section className="dict-singleCard">
+        {loading ? <p className="dict-msg">Đang tra cứu...</p> : null}
+        {!loading && error ? <p className="dict-msg dict-msg--error">{error}</p> : null}
 
-      {!qParam || qParam.length < 2 ? (
-        <p className="msg">Gõ một từ tiếng Anh vào ô &quot;Từ điển&quot; trên menu rồi bấm Tra cứu.</p>
-      ) : null}
+        {!loading && !error && entry ? (
+          <article className="dict-entry">
+            <img
+              className="dict-cover"
+              src={`https://picsum.photos/seed/${encodeURIComponent(entry.word || query || "word")}/160/160`}
+              alt={entry.word}
+            />
+            <div className="dict-word">{entry.word}</div>
+            <div className="dict-phonetic">{entry.phonetic || "/.../"}</div>
+            <div className="dict-posBadge">{toVietnamesePos(entry.partOfSpeech)}</div>
+            <div className="dict-sentence">{entry.example || `${entry.word} is useful.`}</div>
+            <div className="dict-sentenceIpa">{entry.phonetic || ""}</div>
+            <div className="dict-question">What does "{String(entry.word || "").toLowerCase()}" mean in Vietnamese?</div>
 
-      {loading ? <p className="msg">Đang tra cứu…</p> : null}
-      {error ? <p className="errorMsg">{error}</p> : null}
+            <button type="button" className="dict-btn dict-btn--blue" onClick={handleTranslate} disabled={translating}>
+              {translating ? "Đang dịch..." : "Dịch sang tiếng Việt"}
+            </button>
+            {viMeaning ? <p className="dict-meaning">{viMeaning}</p> : null}
 
-      {item ? (
-        <article className="item">
-          <img
-            src={item.image_url}
-            alt={item.word}
-            onError={(event) => {
-              const target = event.currentTarget;
-              if (target.dataset.fallbackApplied === "1") return;
-              target.dataset.fallbackApplied = "1";
-              const seed = encodeURIComponent(String(item.word || "").toLowerCase());
-              target.src = `https://api.dicebear.com/9.x/shapes/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
-            }}
-          />
-          <h3>{item.word}</h3>
-
-          {showBothAccents ? (
-            <div className="accentBlock">
-              <p className="ipa">
-                <strong>Anh Anh (UK):</strong> {item.ipa_uk}
-              </p>
-              <button
-                type="button"
-                className="miniAudio"
-                onClick={() => playOrSpeak(item.audio_uk, item.word, "uk")}
-              >
-                🔊 Nghe từ (UK)
-              </button>
-              <p className="ipa">
-                <strong>Anh Mỹ (US):</strong> {item.ipa_us}
-              </p>
-              <button
-                type="button"
-                className="miniAudio"
-                onClick={() => playOrSpeak(item.audio_us, item.word, "us")}
-              >
-                🔊 Nghe từ (US)
-              </button>
-            </div>
-          ) : (
-            <>
-              <p className="ipa">{item.ipa_us || item.ipa_uk}</p>
-              <div className="btnRow">
-                <button
-                  type="button"
-                  onClick={() => playOrSpeak(item.audio_uk, item.word, "uk")}
-                >
-                  🔊 UK
-                </button>
-                <button
-                  type="button"
-                  onClick={() => playOrSpeak(item.audio_us, item.word, "us")}
-                >
-                  🔊 US
-                </button>
-              </div>
-            </>
-          )}
-
-          {item.part_of_speech === "noun" ||
-          item.part_of_speech === "verb" ||
-          item.part_of_speech === "adjective" ? (
-            <p className="posTag">
-              {item.part_of_speech === "noun"
-                ? "Danh từ"
-                : item.part_of_speech === "verb"
-                ? "Động từ"
-                : "Tính từ"}
-            </p>
-          ) : item.part_of_speech_vi ? (
-            <p className="posTag">{item.part_of_speech_vi}</p>
-          ) : null}
-
-          <p className="sentence">{item.example_sentence}</p>
-          <p className="sentenceIpa">{item.example_sentence_ipa || ""}</p>
-          <p className="question">{item.question_text}</p>
-
-          <button type="button" onClick={() => setShowVi((v) => !v)}>
-            {showVi ? "Ẩn bản dịch tiếng Việt" : "Dịch sang tiếng Việt"}
-          </button>
-          {showVi ? (
-            <>
-              <p className="meaning">
-                {item.vietnamese_meaning || "Chưa có nghĩa tiếng Việt."}
-              </p>
-              <p className="meaning sentenceTrans">
-                {item.example_sentence_vi || "Chưa có bản dịch câu ví dụ."}
-              </p>
-            </>
-          ) : null}
-
-          <div className="btnRow">
+            <button type="button" className="dict-btn dict-btn--blue" onClick={() => speakEnglish(entry.word, 0.9)}>
+              🔉 Nghe từ
+            </button>
             <button
               type="button"
-              onClick={() => {
-                const ex = item.example_audio_url;
-                if (ex) {
-                  new Audio(ex).play().catch(() => speakEnglish(item.example_sentence, "us"));
-                } else {
-                  speakEnglish(item.example_sentence, "us");
-                }
-              }}
+              className="dict-btn dict-btn--blue"
+              onClick={() => speakEnglish(entry.example || `${entry.word} is useful.`, 0.85)}
             >
-              🔊 Nghe câu ví dụ
+              🔉 Nghe câu ví dụ
             </button>
-          </div>
 
-          <button
-            type="button"
-            className="recordBtn"
-            onClick={startRecordWord}
-            disabled={recordingId === item.id}
-          >
-            {recordingId === item.id ? "🎙 Đang ghi âm..." : "🎤 Ghi âm từ và chấm điểm"}
-          </button>
-          <button
-            type="button"
-            className="recordBtn sentenceBtn"
-            onClick={startRecordSentence}
-            disabled={recordingId === `sentence-${item.id}`}
-          >
-            {recordingId === `sentence-${item.id}`
-              ? "🎙 Đang ghi âm câu..."
-              : "🎤 Ghi âm câu và chấm điểm"}
-          </button>
+            <button
+              type="button"
+              className="dict-btn dict-btn--green"
+              onClick={() => startRecord(entry.word, "word")}
+              disabled={recordingMode !== "" && recordingMode !== "word"}
+            >
+              {recordingMode === "word" ? "⏹ Dừng ghi âm từ" : "🎤 Ghi âm từ và chấm điểm"}
+            </button>
+            {speechResultWord ? (
+              <p className="dict-score">
+                {speechResultWord.score}/100 - {speechResultWord.message}
+              </p>
+            ) : null}
 
-          <ScoreBlock id={item.id} result={speechResult[item.id]} />
-          <ScoreBlock id={`sentence-${item.id}`} result={speechResult[`sentence-${item.id}`]} sentence />
-        </article>
-      ) : null}
+            <button
+              type="button"
+              className="dict-btn dict-btn--dark"
+              onClick={() => startRecord(entry.example || `${entry.word} is useful.`, "sentence")}
+              disabled={recordingMode !== "" && recordingMode !== "sentence"}
+            >
+              {recordingMode === "sentence" ? "⏹ Dừng ghi âm câu" : "🎤 Ghi âm câu và chấm điểm"}
+            </button>
+            {recordingHint ? <p className="dict-hint">{recordingHint}</p> : null}
+            {speechResultSentence ? (
+              <p className="dict-score">
+                {speechResultSentence.score}/100 - {speechResultSentence.message}
+              </p>
+            ) : null}
+          </article>
+        ) : null}
+      </section>
 
       <style jsx>{`
-        .page {
-          min-height: 100vh;
-          padding: 1rem;
-          background: linear-gradient(180deg, #9de8ff 0%, #84d7ff 55%, #75d974 100%);
-          font-family: "Fredoka", sans-serif;
+        .dict-page {
+          min-height: calc(100vh - 72px);
+          padding: 10px 10px 96px;
         }
-        .title {
+        .dict-singleCard {
+          width: min(520px, 100%);
+          margin: 0 auto;
+          padding: 0;
+        }
+        .dict-msg {
           text-align: center;
-          margin: 0;
+          font-weight: 700;
           color: #2f4f88;
         }
-        .sub {
-          text-align: center;
-          color: #4d67a0;
-          margin: 0.4rem 0 1rem;
-        }
-        .msg {
-          text-align: center;
-          color: #355388;
-        }
-        .errorMsg {
-          text-align: center;
+        .dict-msg--error {
           color: #b42318;
-          font-weight: 700;
-          background: #fff1f2;
-          border: 2px dashed #fda4af;
-          border-radius: 12px;
-          padding: 0.5rem 0.75rem;
-          max-width: 560px;
-          margin: 0 auto 1rem;
         }
-        .item {
-          max-width: 420px;
-          margin: 0 auto;
-          background: #ffffff;
-          border: 2px dotted #c9d8ff;
+        .dict-entry {
           border-radius: 16px;
-          padding: 0.6rem 0.75rem;
-          text-align: center;
-        }
-        .item img {
-          width: 88px;
-          height: 88px;
-          object-fit: contain;
-        }
-        .item h3 {
-          margin: 0.2rem 0 0.1rem;
-          color: #000000;
-          font-size: 2rem;
-        }
-        .ipa {
-          margin: 0.15rem 0;
-          color: #5f6dd8;
-          font-weight: 700;
-          font-size: 0.88rem;
-        }
-        .accentBlock {
-          text-align: left;
-          margin: 0.25rem 0 0.35rem;
-        }
-        .miniAudio {
-          border: 2px solid #4f8cff;
-          border-radius: 10px;
-          padding: 0.25rem 0.5rem;
-          background: #4f8cff;
-          color: #fff;
-          font-weight: 700;
-          font-size: 0.82rem;
-          cursor: pointer;
-          margin-bottom: 0.35rem;
-        }
-        .posTag {
-          display: inline-block;
-          margin: 0.2rem 0;
-          padding: 0.08rem 0.42rem;
-          border-radius: 999px;
-          background: #eaf2ff;
-          border: 1px solid #c9d8ff;
-          color: #31558a;
-          font-weight: 700;
-          font-size: 0.78rem;
-        }
-        .sentence {
-          color: #000000;
-          font-size: 1.2rem;
-          margin: 0.2rem 0;
-        }
-        .sentenceIpa {
-          margin: 0.1rem 0;
-          color: #6678b8;
-          font-weight: 700;
-          font-size: 0.78rem;
-          min-height: 22px;
-        }
-        .question {
-          color: #4a63a0;
-          font-weight: 700;
-          font-size: 0.83rem;
-          margin: 0.25rem 0;
-        }
-        .meaning {
-          margin: 0.25rem 0;
-          padding: 0.28rem 0.4rem;
-          border-radius: 10px;
-          background: #f1f7ff;
-          border: 2px dashed #c9d8ff;
-          color: #274e85;
-          font-weight: 700;
-          font-size: 0.86rem;
-        }
-        .sentenceTrans {
-          background: #fff7e8;
-          border-color: #ffd699;
-          color: #7a4b00;
-        }
-        .item > button:not(.recordBtn):not(.miniAudio) {
-          border: 3px solid #fff;
-          border-radius: 12px;
-          background: #4f8cff;
-          color: #fff;
-          font-weight: 700;
-          padding: 0.4rem 0.7rem;
-          cursor: pointer;
-          margin-top: 0.2rem;
-        }
-        .btnRow {
+          border: 2px dotted rgba(69, 127, 255, 0.35);
+          background: #fff;
+          padding: 12px 12px 14px;
           display: flex;
-          gap: 0.28rem;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          gap: 8px;
+        }
+        .dict-cover {
+          width: 86px;
+          height: 86px;
+          object-fit: cover;
+          border-radius: 2px;
+        }
+        .dict-word {
+          font-size: clamp(2rem, 4.8vw, 3rem);
+          font-weight: 800;
+          color: #000;
+          line-height: 1.05;
+        }
+        .dict-phonetic {
+          color: #4d63c9;
+          font-weight: 700;
+          font-size: 1.05rem;
+        }
+        .dict-posBadge {
+          display: inline-flex;
+          align-items: center;
           justify-content: center;
-          flex-wrap: wrap;
-          margin: 0.35rem 0;
+          border: 1px solid #9fb6d9;
+          border-radius: 999px;
+          background: #e6eef7;
+          color: #2e4f87;
+          font-weight: 700;
+          padding: 2px 12px;
+          font-size: 0.9rem;
         }
-        .btnRow button {
-          border: 3px solid #fff;
+        .dict-sentence {
+          margin-top: 2px;
+          font-size: 2rem;
+          line-height: 1.15;
+          color: #111;
+        }
+        .dict-sentenceIpa {
+          color: #4f65c8;
+          font-weight: 700;
+          font-size: 1.05rem;
+        }
+        .dict-question {
+          color: #3f5fa9;
+          font-weight: 700;
+          font-size: 0.95rem;
+        }
+        .dict-btn {
+          border: none;
           border-radius: 12px;
-          background: #4f8cff;
+          padding: 9px 16px;
           color: #fff;
-          font-weight: 700;
-          padding: 0.35rem 0.6rem;
+          font-size: 1.05rem;
+          font-weight: 800;
           cursor: pointer;
-          font-size: 0.88rem;
+          min-width: 170px;
+          box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
         }
-        .recordBtn {
-          margin-top: 0.25rem;
-          border: 3px solid #fff !important;
-          border-radius: 12px !important;
-          padding: 0.4rem 0.7rem !important;
-          background: green !important;
-          color: #fff !important;
+        .dict-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .dict-btn--blue {
+          background: linear-gradient(180deg, #5f99ff, #4a81e8);
+        }
+        .dict-btn--green {
+          background: linear-gradient(180deg, #10a920, #038f15);
+        }
+        .dict-btn--dark {
+          background: linear-gradient(180deg, #123b3d, #062327);
+        }
+        .dict-meaning,
+        .dict-score {
+          margin: 0;
+          color: #2d3c4a;
           font-weight: 700;
-          cursor: pointer;
-          width: 100%;
-          max-width: 100%;
+          font-size: 0.95rem;
         }
-        .sentenceBtn {
-          background: #0b2115 !important;
-          margin-top: 0.25rem;
+        .dict-hint {
+          margin: 0;
+          color: #245f8f;
+          font-size: 0.9rem;
+          font-weight: 700;
         }
       `}</style>
     </main>
-  );
-}
-
-function ScoreBlock({ id, result, sentence }) {
-  if (!result) return null;
-  return (
-    <div className="scoreBox">
-      <p>
-        {sentence ? "Điểm câu: " : "Điểm: "}
-        {result.score}%
-      </p>
-      <p>Bạn đọc: {result.transcript || "-"}</p>
-      <p>{result.message}</p>
-      {result.details ? (
-        <p className="detailLine">{result.details}</p>
-      ) : null}
-      {Array.isArray(result.phonemeGroups) && result.phonemeGroups.length ? (
-        <div className="phonemePanel">
-          <p className="phonemeTitle">Chi tiết phoneme (IPA tham khảo)</p>
-          <p className="phonemeHint">Ô xanh ≈ khớp từ; cam/đỏ = cần luyện thêm (ước lượng từ so khớp từ, không phải Azure).</p>
-          <div className="phonemeWordList">
-            {result.phonemeGroups.map((group, gIdx) => (
-              <div key={`${id}-g-${gIdx}`} className="phonemeWordRow">
-                <p className="phonemeWordLabel">{group.word}</p>
-                <div className="phonemeGrid">
-                  {group.phonemes.map((p, idx) => (
-                    <div
-                      key={`${id}-p-${gIdx}-${idx}`}
-                      className={`phonemeChip ${p.score >= 80 ? "good" : p.score >= 60 ? "mid" : "bad"}`}
-                    >
-                      <span className="ph">{p.phoneme}</span>
-                      <span className="sc">{p.score}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      <style jsx>{`
-        .scoreBox {
-          margin-top: 0.35rem;
-          border-radius: 10px;
-          background: #eef3ff;
-          border: 2px dashed #ccd8ff;
-          padding: 0.35rem 0.5rem;
-          color: #37558b;
-          font-size: 0.88rem;
-          text-align: left;
-        }
-        .scoreBox p {
-          margin: 0.15rem 0;
-        }
-        .detailLine {
-          margin: 0.2rem 0;
-          font-weight: 700;
-          color: #1a4a8c;
-          background: #fff;
-          border-radius: 8px;
-          padding: 0.25rem 0.35rem;
-          border: 1px dashed #9db7ff;
-        }
-        .phonemePanel {
-          margin-top: 0.3rem;
-          border-top: 1px dashed #b8c9ff;
-          padding-top: 0.3rem;
-        }
-        .phonemeTitle {
-          margin: 0 0 0.25rem;
-          font-weight: 700;
-          color: #1f3f7a;
-        }
-        .phonemeHint {
-          margin: 0 0 0.28rem;
-          font-size: 0.76rem;
-          color: #4a5f8f;
-          font-weight: 600;
-        }
-        .phonemeWordList {
-          display: grid;
-          gap: 0.24rem;
-        }
-        .phonemeWordRow {
-          border: 1px dashed #bfd0ff;
-          border-radius: 8px;
-          padding: 0.22rem 0.3rem;
-          background: #f7faff;
-        }
-        .phonemeWordLabel {
-          margin: 0 0 0.16rem;
-          color: #1e4b91;
-          font-weight: 700;
-          text-transform: lowercase;
-        }
-        .phonemeGrid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.22rem;
-        }
-        .phonemeChip {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.3rem;
-          border-radius: 999px;
-          padding: 0.14rem 0.45rem;
-          font-size: 0.78rem;
-          border: 1px solid transparent;
-          font-weight: 700;
-        }
-        .phonemeChip.good {
-          background: #e9fbe9;
-          color: #126a2f;
-          border-color: #9be3aa;
-        }
-        .phonemeChip.mid {
-          background: #fff8e6;
-          color: #8a6200;
-          border-color: #ffd36b;
-        }
-        .phonemeChip.bad {
-          background: #ffecec;
-          color: #a01f1f;
-          border-color: #ffb4b4;
-        }
-      `}</style>
-    </div>
-  );
-}
-
-export default function DictionaryPage() {
-  return (
-    <Suspense fallback={<p className="dict-suspense">Đang tải…</p>}>
-      <DictionaryLookupContent />
-    </Suspense>
   );
 }

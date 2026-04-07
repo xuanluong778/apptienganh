@@ -1,3 +1,4 @@
+import type { PoolConnection } from "mysql2/promise";
 import pool from "@/lib/db";
 
 export type SubscriptionPlan = "free" | "pro" | "vip";
@@ -282,6 +283,25 @@ export async function upgradeUserPlanFromBankTransfer(
   const row = await fetchSubscriptionRow(userId);
   if (!row) throw new Error("subscriptions: bank upgrade readback failed");
   return row;
+}
+
+/** Cùng transaction MySQL với bảng `payments` (IPN SePay, v.v.). */
+export async function upgradeUserPlanFromBankTransferOnConn(
+  conn: PoolConnection,
+  userId: number,
+  plan: "pro" | "vip",
+  billingPeriod: "monthly" | "yearly"
+): Promise<void> {
+  const days = billingPeriod === "yearly" ? 365 : 30;
+  await conn.query(
+    `UPDATE subscriptions SET
+       plan = ?,
+       subscribed_at = NOW(),
+       expires_at = DATE_ADD(NOW(), INTERVAL ? DAY),
+       updated_at = NOW()
+     WHERE user_id = ?`,
+    [plan, days, userId]
+  );
 }
 
 /**

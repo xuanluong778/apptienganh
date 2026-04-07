@@ -11,6 +11,7 @@ import {
 const PAGE_SIZE = 60;
 
 export default function VocabularyPage() {
+  const [keyword, setKeyword] = useState("");
   const [items, setItems] = useState([]);
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState("");
@@ -26,14 +27,25 @@ export default function VocabularyPage() {
   const azureTokenRef = useRef(null);
 
   useEffect(() => {
+    const readKeyword = () => {
+      const params = new URLSearchParams(window.location.search);
+      setKeyword(String(params.get("q") || "").trim());
+    };
+    readKeyword();
+    window.addEventListener("popstate", readKeyword);
+    return () => window.removeEventListener("popstate", readKeyword);
+  }, []);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
       setLoadError("");
       const topicQuery = selectedTopic ? `&topic=${encodeURIComponent(selectedTopic)}` : "";
       const posQuery = selectedPos ? `&pos=${encodeURIComponent(selectedPos)}` : "";
+      const keywordQuery = keyword ? `&q=${encodeURIComponent(keyword)}` : "";
       try {
         const res = await fetch(
-          `/api/vocabulary?page=${page}&limit=${PAGE_SIZE}${topicQuery}${posQuery}`,
+          `/api/vocabulary?page=${page}&limit=${PAGE_SIZE}${topicQuery}${posQuery}${keywordQuery}`,
           {
           cache: "no-store",
           }
@@ -59,7 +71,11 @@ export default function VocabularyPage() {
       setLoading(false);
     }
     load();
-  }, [page, selectedTopic, selectedPos]);
+  }, [page, selectedTopic, selectedPos, keyword]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [keyword]);
 
   useEffect(() => {
     async function loadTopics() {

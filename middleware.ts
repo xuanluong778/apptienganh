@@ -8,6 +8,8 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/auth" || pathname.startsWith("/auth/")) return true;
   if (pathname.startsWith("/api/auth")) return true;
   if (pathname === "/api/billing/webhook") return true;
+  if (pathname === "/api/payments/sepay/ipn") return true;
+  if (pathname.startsWith("/billing/sepay")) return true;
   // Mọi route kiểm tra sức khỏe (kể cả /api/health/db) — tránh VPS bản cũ sót từng path.
   if (pathname === "/api/health" || pathname.startsWith("/api/health/")) return true;
   if (pathname.startsWith("/_next")) return true;
@@ -16,7 +18,7 @@ function isPublicPath(pathname: string): boolean {
   if (/\.(?:ico|png|jpg|jpeg|gif|webp|svg|txt|xml|json|webmanifest|woff2?)$/i.test(pathname)) {
     return true;
   }
-  if (pathname === "/" || pathname === "/quiz" || pathname === "/matching" || pathname === "/memory") {
+  if (pathname === "/" || pathname === "/quiz" || pathname === "/pronunciation") {
     return true;
   }
   if (pathname === "/vocabulary" || pathname === "/dictionary") return true;
@@ -28,15 +30,31 @@ function isPublicApiPath(pathname: string, method: string): boolean {
   if (pathname.startsWith("/api/vocabulary")) {
     return m === "GET" || m === "HEAD" || m === "OPTIONS";
   }
-  if (pathname.startsWith("/api/quiz/")) return true;
-  if (pathname.startsWith("/api/matching/")) return true;
   if (pathname.startsWith("/api/dictionary/")) return true;
+  if (pathname === "/api/quiz" || pathname.startsWith("/api/quiz/")) return true;
   return false;
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const method = request.method;
+
+  if (pathname === "/memory") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/pronunciation";
+    return NextResponse.redirect(url);
+  }
+
+  if (pathname === "/matching") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/quiz";
+    return NextResponse.redirect(url);
+  }
+  if (pathname === "/dashboard") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
 
   if (isPublicPath(pathname)) {

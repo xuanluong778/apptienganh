@@ -3,34 +3,65 @@ import pool from "@/lib/db";
 import { normalizeMediaUrl } from "@/lib/media-url";
 import { getSessionUserIdFromRequest } from "@/lib/http/ai-entitlement";
 import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
+import {
+  buildVocabularySelectFragments,
+  getVocabularyTableColumnSet,
+} from "@/lib/vocabulary/vocabulary-columns";
 
 export async function GET(request) {
   try {
     await ensureVocabularySchema(pool);
+    const cols = await getVocabularyTableColumnSet();
+    const { selectList, meaningCol, hasLevel, hasTopic, hasPos } = buildVocabularySelectFragments(cols);
+
+    if (!meaningCol) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Bảng vocabulary thiếu cột nghĩa (cần `meaning` hoặc `vietnamese_meaning`).",
+        },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const limit = Math.min(200, Math.max(1, Number(searchParams.get("limit") || 24)));
-    const level = (searchParams.get("level") || "beginner").toLowerCase();
+    const level = (searchParams.get("level") || "").trim().toLowerCase();
     const topic = (searchParams.get("topic") || "").trim();
     const pos = (searchParams.get("pos") || "").trim().toLowerCase();
+    const q = (searchParams.get("q") || "").trim().toLowerCase();
     const offset = (page - 1) * limit;
 
-    const whereClauses = ["level = ?"];
-    const whereParams = [level];
+    const whereClauses = [];
+    const whereParams = [];
 
-    if (topic) {
+    if (hasLevel && level && level !== "all") {
+      whereClauses.push("level = ?");
+      whereParams.push(level);
+    }
+
+    if (topic && hasTopic) {
       whereClauses.push("topic = ?");
       whereParams.push(topic);
     }
-    if (pos) {
+    if (pos && hasPos) {
       whereClauses.push("part_of_speech = ?");
       whereParams.push(pos);
+    }
+    if (q) {
+      whereClauses.push(`(LOWER(word) LIKE ? OR LOWER(COALESCE(\`${meaningCol}\`, '')) LIKE ?)`);
+      whereParams.push(`%${q}%`, `%${q}%`);
+    }
+
+    if (!whereClauses.length) {
+      whereClauses.push("1=1");
     }
 
     const whereSql = whereClauses.join(" AND ");
 
     const [rows] = await pool.query(
-      `SELECT id, word, ipa, vietnamese_meaning, part_of_speech, example_sentence, example_sentence_vi, example_sentence_ipa, question_text, topic, image_url, audio_url, example_audio_url, level
+      `SELECT ${selectList}
        FROM vocabulary
        WHERE ${whereSql}
        ORDER BY id ASC
@@ -63,13 +94,19 @@ export async function GET(request) {
     });
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
-    const isConn = code === "ECONNREFUSED" || code === "ER_ACCESS_DENIED_ERROR" || code === "ENOTFOUND";
+    const isConn =
+      code === "ECONNREFUSED" ||
+      code === "ER_ACCESS_DENIED_ERROR" ||
+      code === "ENOTFOUND" ||
+      code === "ER_BAD_DB_ERROR";
+    const detail =
+      process.env.NODE_ENV === "development" && error instanceof Error ? ` ${error.message}` : "";
     return NextResponse.json(
       {
         success: false,
         message: isConn
-          ? "Không kết nối được database. Kiểm tra DB_HOST / DATABASE_URL trong .env."
-          : "Failed to fetch vocabulary.",
+          ? "Không kết nối được database. Kiểm tra MySQL (XAMPP) và DB trong .env."
+          : `Không tải được từ vựng.${detail}`.trim(),
       },
       { status: 500 }
     );
@@ -115,26 +152,74 @@ export async function POST(request) {
       );
     }
 
-    await pool.query(
-      "ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS question_text VARCHAR(255) NULL AFTER example_sentence"
-    );
-    await pool.query(
-      "ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS example_sentence_ipa VARCHAR(500) NULL AFTER example_sentence"
-    );
-    await pool.query(
-      "ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS example_sentence_vi VARCHAR(500) NULL AFTER example_sentence"
-    );
-    await pool.query(
-      "ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS vietnamese_meaning VARCHAR(255) NULL AFTER ipa"
-    );
-    await pool.query(
-      "ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS part_of_speech VARCHAR(20) NULL AFTER vietnamese_meaning"
-    );
+    const cols = await getVocabularyTableColumnSet();
+    const meaningCol = cols.has("meaning") ? "meaning" : cols.has("vietnamese_meaning") ? "vietnamese_meaning" : null;
+    const ipaCol = cols.has("ipa") ? "ipa" : cols.has("pronunciation") ? "pronunciation" : null;
+    if (!meaningCol) {
+      return NextResponse.json(
+        { success: false, message: "Bảng vocabulary thiếu cột nghĩa." },
+        { status: 500 }
+      );
+    }
+
+    const q = (n) => `\`${n}\``;
+    const insertCols = [`${q("word")}`];
+    const placeholders = ["?"];
+    const values = [word];
+
+    if (ipaCol) {
+      insertCols.push(q(ipaCol));
+      placeholders.push("?");
+      values.push(ipa);
+    }
+    insertCols.push(q(meaningCol));
+    placeholders.push("?");
+    values.push(vietnameseMeaning);
+
+    if (cols.has("part_of_speech")) {
+      insertCols.push(q("part_of_speech"));
+      placeholders.push("?");
+      values.push(partOfSpeech);
+    }
+    if (cols.has("example_sentence")) {
+      insertCols.push(q("example_sentence"));
+      placeholders.push("?");
+      values.push(exampleSentence);
+    }
+    if (cols.has("example_sentence_vi")) {
+      insertCols.push(q("example_sentence_vi"));
+      placeholders.push("?");
+      values.push(exampleSentenceVi);
+    }
+    if (cols.has("example_sentence_ipa")) {
+      insertCols.push(q("example_sentence_ipa"));
+      placeholders.push("?");
+      values.push(exampleSentenceIpa);
+    }
+    if (cols.has("question_text")) {
+      insertCols.push(q("question_text"));
+      placeholders.push("?");
+      values.push(questionText);
+    }
+    if (cols.has("image_url")) {
+      insertCols.push(q("image_url"));
+      placeholders.push("?");
+      values.push(imageUrl);
+    }
+    if (cols.has("audio_url")) {
+      insertCols.push(q("audio_url"));
+      placeholders.push("?");
+      values.push(audioUrl);
+    }
+    if (cols.has("level")) {
+      insertCols.push(q("level"));
+      placeholders.push("?");
+      values.push(level);
+    }
 
     const [result] = await pool.query(
-      `INSERT INTO vocabulary (word, ipa, vietnamese_meaning, part_of_speech, example_sentence, example_sentence_vi, example_sentence_ipa, question_text, image_url, audio_url, level)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [word, ipa, vietnameseMeaning, partOfSpeech, exampleSentence, exampleSentenceVi, exampleSentenceIpa, questionText, imageUrl, audioUrl, level]
+      `INSERT INTO vocabulary (${insertCols.join(", ")}) VALUES (${placeholders.join(", ")})`,
+      values
     );
 
     return NextResponse.json(

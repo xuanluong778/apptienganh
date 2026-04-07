@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { ensureVerificationSchema } from "@/lib/auth/ensure-verification-schema";
 import { generateOtpCode, generateOtpToken, hashOtpCode } from "@/lib/auth";
 import { sendOtp } from "@/lib/otp-delivery";
 import { getSettingSync } from "@/lib/runtime-settings/cache";
@@ -37,24 +38,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: "Invalid phone number." }, { status: 400 });
     }
 
-    await pool.query("ALTER TABLE users MODIFY COLUMN email VARCHAR(255) NULL");
-    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NULL UNIQUE AFTER email");
-    await pool.query(
-      `CREATE TABLE IF NOT EXISTS verification_codes (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        otp_token VARCHAR(100) NOT NULL UNIQUE,
-        contact_type VARCHAR(20) NOT NULL,
-        contact_value VARCHAR(255) NOT NULL,
-        code_hash VARCHAR(128) NOT NULL,
-        purpose VARCHAR(30) NOT NULL DEFAULT 'register',
-        attempts INT NOT NULL DEFAULT 0,
-        expires_at DATETIME NOT NULL,
-        consumed_at DATETIME NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_contact (contact_type, contact_value),
-        INDEX idx_expires_at (expires_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-    );
+    await ensureVerificationSchema(pool);
 
     const [existing] = await pool.query(
       contactType === "email"
@@ -102,7 +86,23 @@ export async function POST(request) {
       queued = await tryEnqueueRegisterOtpEmail(contactValue, otpCode);
     }
     if (!queued) {
-      await sendOtp({ contactType, contactValue, otpCode });
+      try {
+        await sendOtp({ contactType, contactValue, otpCode });
+      } catch (deliveryErr) {
+        await pool.query(`DELETE FROM verification_codes WHERE otp_token = ? LIMIT 1`, [otpToken]);
+        const isMail =
+          deliveryErr?.code === "REGISTER_EMAIL_OTP_FAILED" ||
+          String(deliveryErr?.message || "").includes("REGISTER_EMAIL_OTP_FAILED");
+        return NextResponse.json(
+          {
+            success: false,
+            message: isMail
+              ? "Không gửi được email OTP. Kiểm tra SENDGRID_* hoặc SMTP_* trong .env (và REDIS_URL nếu dùng hàng đợi)."
+              : "Không gửi được OTP.",
+          },
+          { status: 503 }
+        );
+      }
     }
 
     const allowDebugOtp =
@@ -122,7 +122,11 @@ export async function POST(request) {
         email_delivery: contactType === "email" ? (queued ? "queued" : "sync") : undefined,
       },
     });
-  } catch (_error) {
-    return NextResponse.json({ success: false, message: "Failed to send OTP." }, { status: 500 });
+  } catch (err) {
+    console.error("[request-otp]", err?.message || err);
+    return NextResponse.json(
+      { success: false, message: err?.message || "Failed to send OTP." },
+      { status: 500 }
+    );
   }
 }

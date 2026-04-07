@@ -217,7 +217,7 @@ export default function ServicePackagesModal({ open, onClose, userPlan = "expire
             disabled={loadingPlan !== null || proLocked}
             onClick={() => openBankForPlan("pro")}
           >
-            Chuyển khoản · Pro ({formatVnd(proAmount)})
+            SePay · Pro ({formatVnd(proAmount)})
           </button>
           <button
             type="button"
@@ -225,11 +225,11 @@ export default function ServicePackagesModal({ open, onClose, userPlan = "expire
             disabled={loadingPlan !== null || vipLocked}
             onClick={() => openBankForPlan("vip")}
           >
-            Chuyển khoản · VIP ({formatVnd(vipAmount)})
+            SePay · VIP ({formatVnd(vipAmount)})
           </button>
         </div>
         <p className={ps.bankHint}>
-          Việt Nam: QR VietQR tự điền số tiền và nội dung theo gói và kỳ bạn chọn.
+          Thanh toán VN qua SePay (QR / chuyển khoản tự động). Kích hoạt gói ngay sau khi thanh toán thành công.
         </p>
 
         <p className={ps.footerNote}>Thanh toán thẻ qua Stripe. Bạn có thể hủy trong cổng khách hàng.</p>

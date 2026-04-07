@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { ensureVerificationSchema } from "@/lib/auth/ensure-verification-schema";
 import { hashPassword, verifyOtpCode } from "@/lib/auth";
 import { setSessionOnResponse } from "@/lib/auth/create-session";
 import { createInitialSubscriptionForNewUser } from "@/lib/subscriptions/subscription-service";
@@ -85,24 +86,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: "Số điện thoại không hợp lệ." }, { status: 400 });
     }
 
-    await pool.query("ALTER TABLE users MODIFY COLUMN email VARCHAR(255) NULL");
-    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NULL UNIQUE AFTER email");
-    await pool.query(
-      `CREATE TABLE IF NOT EXISTS verification_codes (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        otp_token VARCHAR(100) NOT NULL UNIQUE,
-        contact_type VARCHAR(20) NOT NULL,
-        contact_value VARCHAR(255) NOT NULL,
-        code_hash VARCHAR(128) NOT NULL,
-        purpose VARCHAR(30) NOT NULL DEFAULT 'register',
-        attempts INT NOT NULL DEFAULT 0,
-        expires_at DATETIME NOT NULL,
-        consumed_at DATETIME NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_contact (contact_type, contact_value),
-        INDEX idx_expires_at (expires_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-    );
+    await ensureVerificationSchema(pool);
 
     if (useEmailPhone) {
       const [byEmail] = await pool.query("SELECT id FROM users WHERE email = ? LIMIT 1", [email]);
@@ -195,7 +179,7 @@ export async function POST(request) {
     );
 
     if (Number.isFinite(newUserId) && newUserId > 0) {
-      await setSessionOnResponse(res, newUserId);
+      await setSessionOnResponse(res, newUserId, request);
     }
 
     return res;

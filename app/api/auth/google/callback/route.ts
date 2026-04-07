@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import type { ResultSetHeader } from "mysql2";
 import pool from "@/lib/db";
+import { ensureUsersAuthColumns } from "@/lib/auth/ensure-verification-schema";
 import { hashPassword } from "@/lib/auth";
 import { setSessionOnResponse } from "@/lib/auth/create-session";
 import { createInitialSubscriptionForNewUser } from "@/lib/subscriptions/subscription-service";
@@ -75,8 +76,7 @@ export async function GET(request: NextRequest) {
     return fail("google_email");
   }
 
-  await pool.query("ALTER TABLE users MODIFY COLUMN email VARCHAR(255) NULL");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NULL UNIQUE AFTER email");
+  await ensureUsersAuthColumns(pool);
 
   const [rows] = await pool.query(
     "SELECT id, name, email, phone FROM users WHERE email = ? LIMIT 1",
@@ -113,6 +113,6 @@ export async function GET(request: NextRequest) {
   const res = NextResponse.redirect(new URL(dest, origin));
   res.cookies.delete("google_oauth_state");
   res.cookies.delete("google_oauth_next");
-  await setSessionOnResponse(res, userId);
+  await setSessionOnResponse(res, userId, request);
   return res;
 }

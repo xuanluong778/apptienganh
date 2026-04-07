@@ -181,7 +181,7 @@ export default function PaywallModal({ open, onClose, message, source = "" }) {
             disabled={loadingPlan !== null}
             onClick={() => openBankForPlan("pro")}
           >
-            Bank transfer · Pro ({formatVnd(proAmount)})
+            SePay · Pro ({formatVnd(proAmount)})
           </button>
           <button
             type="button"
@@ -189,11 +189,11 @@ export default function PaywallModal({ open, onClose, message, source = "" }) {
             disabled={loadingPlan !== null}
             onClick={() => openBankForPlan("vip")}
           >
-            Bank transfer · VIP ({formatVnd(vipAmount)})
+            SePay · VIP ({formatVnd(vipAmount)})
           </button>
         </div>
         <p className={styles.bankHint}>
-          Việt Nam: chuyển khoản ACB, QR VietQR tự điền số tiền và nội dung theo gói bạn chọn.
+          Thanh toán VN qua SePay (QR / chuyển khoản tự động). Sau khi trả tiền thành công, gói được kích hoạt ngay.
         </p>
 
         <p className={styles.footerNote}>Secure payment via Stripe. You can cancel anytime in the customer portal.</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./BankTransferModal.module.css";
 
@@ -9,8 +9,8 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [payment, setPayment] = useState(null);
-  const [confirming, setConfirming] = useState(false);
-  const [confirmMessage, setConfirmMessage] = useState("");
+  const sepayFormRef = useRef(null);
+  const submittedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -20,7 +20,7 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
     if (!open) {
       setPayment(null);
       setError("");
-      setConfirmMessage("");
+      submittedRef.current = false;
       return;
     }
     if (!plan) {
@@ -32,9 +32,9 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
     async function createPayment() {
       setLoading(true);
       setError("");
-      setConfirmMessage("");
+      submittedRef.current = false;
       try {
-        const res = await fetch("/api/payments/create", {
+        const res = await fetch("/api/payments/sepay/init", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -45,7 +45,7 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!res.ok || !json.success) {
-          setError(json.message || "Không tạo được yêu cầu thanh toán.");
+          setError(json.message || "Không tạo được yêu cầu thanh toán SePay.");
           setPayment(null);
           return;
         }
@@ -64,52 +64,23 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
     return () => {
       cancelled = true;
     };
-  }, [open, plan]);
+  }, [open, plan, billingPeriod]);
 
-  const copyTransferContent = () => {
-    if (!payment?.transferContent || typeof navigator === "undefined") return;
-    try {
-      void navigator.clipboard.writeText(payment.transferContent);
-      setConfirmMessage("Đã copy nội dung chuyển khoản.");
-    } catch {
-      setConfirmMessage("Không copy được, hãy tự ghi lại nội dung.");
-    }
-  };
-
-  const handleConfirmTransfer = async () => {
-    if (!payment?.transferContent) return;
-    setConfirming(true);
-    setConfirmMessage("");
-    setError("");
-    try {
-      const res = await fetch("/api/payments/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transferContent: payment.transferContent }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.success) {
-        setError(json.message || "Không xác nhận được thanh toán.");
-        return;
+  useEffect(() => {
+    if (!payment || payment.mode !== "sepay" || submittedRef.current) return;
+    const t = window.setTimeout(() => {
+      const el = sepayFormRef.current;
+      if (el && !submittedRef.current) {
+        submittedRef.current = true;
+        el.submit();
       }
-      if (json.data?.status === "admin_confirmed") {
-        setConfirmMessage("Gói của bạn đã được admin kích hoạt trước đó.");
-      } else if (json.data?.status === "user_confirmed") {
-        setConfirmMessage(
-          json.data?.message ||
-            "Đã gửi yêu cầu, vui lòng chờ admin xác nhận sau khi nhận được tiền."
-        );
-      } else {
-        setConfirmMessage("Đã ghi nhận. Vui lòng chờ admin xác nhận thanh toán.");
-      }
-    } catch {
-      setError("Không xác nhận được thanh toán. Thử lại sau.");
-    } finally {
-      setConfirming(false);
-    }
-  };
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [payment]);
 
   if (!open || !mounted) return null;
+
+  const isSepay = payment?.mode === "sepay" && payment?.actionUrl && payment?.fields;
 
   const modal = (
     <div className={styles.backdrop} role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
@@ -118,40 +89,28 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
           ×
         </button>
         <h2 id="bank-transfer-title" className={styles.title}>
-          Thanh toán chuyển khoản ngân hàng
+          Thanh toán qua SePay
         </h2>
         <p className={styles.subtitle}>
-          Vui lòng chuyển khoản đúng <strong>số tiền</strong> và <strong>nội dung chuyển khoản</strong> bên dưới để hệ thống
-          có thể kích hoạt gói Pro/VIP cho bạn.
+          Bạn sẽ được chuyển tới cổng thanh toán SePay (quét QR / chuyển khoản tự động đối soát). Sau khi thanh toán
+          thành công, gói Pro/VIP được kích hoạt tự động — không cần admin xác nhận.
         </p>
 
-        {loading && <p className={styles.message}>Đang tạo yêu cầu thanh toán...</p>}
+        {loading && <p className={styles.message}>Đang chuẩn bị phiên thanh toán…</p>}
         {error && !loading && (
           <p className={`${styles.message} ${styles.error}`} role="alert">
             {error}
           </p>
         )}
 
-        {payment && !loading && (
+        {isSepay && !loading && (
           <>
             <section className={styles.section}>
-              <h3 className={styles.sectionTitle}>Thông tin thanh toán</h3>
+              <h3 className={styles.sectionTitle}>Đơn của bạn</h3>
               <div className={styles.infoGrid}>
                 <div className={styles.infoRow}>
-                  <span>Chủ tài khoản:</span>
-                  <strong>{payment.accountName}</strong>
-                </div>
-                <div className={styles.infoRow}>
-                  <span>Ngân hàng:</span>
-                  <strong>{payment.bankName}</strong>
-                </div>
-                <div className={styles.infoRow}>
-                  <span>Số tài khoản:</span>
-                  <strong>{payment.bankAccount}</strong>
-                </div>
-                <div className={styles.infoRow}>
                   <span>Số tiền:</span>
-                  <strong>{payment.amount.toLocaleString("vi-VN")} đ</strong>
+                  <strong>{Number(payment.amount).toLocaleString("vi-VN")} đ</strong>
                 </div>
                 <div className={styles.infoRow}>
                   <span>Gói & kỳ:</span>
@@ -160,47 +119,26 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
                     {payment.billingPeriod === "yearly" || billingPeriod === "yearly" ? "Năm" : "Tháng"}
                   </strong>
                 </div>
+                {payment.orderInvoiceNumber ? (
+                  <div className={styles.infoRow}>
+                    <span>Mã đơn:</span>
+                    <strong className={styles.transferValue}>{payment.orderInvoiceNumber}</strong>
+                  </div>
+                ) : null}
               </div>
             </section>
 
-            <section className={styles.section}>
-              <h3 className={styles.sectionTitle}>Nội dung chuyển khoản</h3>
-              <p className={styles.transferContent}>
-                <span className={styles.transferLabel}>Nội dung:</span>
-                <span className={styles.transferValue}>{payment.transferContent}</span>
-              </p>
-              <button type="button" className={styles.copyBtn} onClick={copyTransferContent}>
-                Copy nội dung chuyển khoản
-              </button>
-            </section>
+            <p className={styles.message}>Đang mở cổng thanh toán SePay… (nếu trình duyệt chặn popup, hãy cho phép chuyển trang)</p>
 
-            <section className={styles.section}>
-              <h3 className={styles.sectionTitle}>Quét mã QR</h3>
-              <div className={styles.qrWrap}>
-                <img src={payment.qrUrl} alt="Mã QR chuyển khoản ngân hàng" className={styles.qrImage} />
-              </div>
-              <p className={styles.qrNote}>
-                Quét mã QR để chuyển khoản nhanh — ứng dụng ngân hàng sẽ tự điền số tiền và nội dung.
-              </p>
-            </section>
+            <form ref={sepayFormRef} action={payment.actionUrl} method="POST" className={styles.visuallyHidden}>
+              {Object.entries(payment.fields).map(([name, value]) => (
+                <input key={name} type="hidden" name={name} value={value} />
+              ))}
+              <noscript>
+                <button type="submit">Tiếp tục thanh toán SePay</button>
+              </noscript>
+            </form>
           </>
-        )}
-
-        <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.confirmBtn}
-            onClick={handleConfirmTransfer}
-            disabled={confirming || !payment}
-          >
-            {confirming ? "Đang xác nhận..." : "Tôi đã chuyển khoản"}
-          </button>
-        </div>
-
-        {confirmMessage && (
-          <p className={styles.confirmMessage} role="status">
-            {confirmMessage}
-          </p>
         )}
       </div>
     </div>
@@ -208,4 +146,3 @@ export default function BankTransferModal({ open, onClose, plan, billingPeriod =
 
   return createPortal(modal, document.body);
 }
-

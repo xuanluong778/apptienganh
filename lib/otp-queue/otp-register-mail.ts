@@ -66,7 +66,10 @@ export function startOtpRegisterMailWorker(): void {
     async (job) => {
       const { deliverRegisterOtpEmail } = await import("@/lib/otp-delivery");
       const { to, code } = job.data as { to: string; code: string };
-      await deliverRegisterOtpEmail(to, code);
+      const ok = await deliverRegisterOtpEmail(to, code);
+      if (!ok) {
+        throw new Error("Gửi email OTP thất bại (SendGrid/SMTP/webhook). Kiểm tra log server.");
+      }
     },
     {
       connection,

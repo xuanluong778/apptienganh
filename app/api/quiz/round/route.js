@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
+import { getVocabularyQuizColumns } from "@/lib/vocab-quiz-columns";
 
 /** Tối đa số phần hiển thị (P1…P100); tránh hàng trăm nút và khối lượng quiz quá lớn. */
 const MAX_QUIZ_SECTIONS = 100;
@@ -28,6 +29,11 @@ function displayMeaning(row) {
 export async function GET(request) {
   try {
     await ensureVocabularySchema(pool);
+    const { meaning: meaningCol, pronunciation: pronCol } = await getVocabularyQuizColumns();
+
+    const mField = `\`${meaningCol.replace(/`/g, "")}\``;
+    const ipaExpr = pronCol ? `TRIM(\`${pronCol.replace(/`/g, "")}\`)` : `''`;
+
     const { searchParams } = new URL(request.url);
     const mode = String(searchParams.get("mode") || "1");
     const requestedSection = Number(searchParams.get("section") || 1);
@@ -66,8 +72,10 @@ export async function GET(request) {
     const section = Math.min(Math.max(1, requestedSection), totalSections);
     const offset = (section - 1) * SECTION_SIZE;
 
+    const selectList = `id, word, ${ipaExpr} AS ipa, TRIM(${mField}) AS vietnamese_meaning, example_sentence, question_text, audio_url`;
+
     const [rows] = await pool.query(
-      `SELECT id, word, ipa, vietnamese_meaning, example_sentence, question_text, audio_url
+      `SELECT ${selectList}
        FROM vocabulary
        WHERE ${levelSql} AND ${baseWordWhere}
        ORDER BY id ASC
@@ -82,7 +90,7 @@ export async function GET(request) {
     }
 
     const [poolAll] = await pool.query(
-      `SELECT word, vietnamese_meaning, ipa, audio_url
+      `SELECT word, TRIM(${mField}) AS vietnamese_meaning, ${ipaExpr} AS ipa, audio_url
        FROM vocabulary
        WHERE ${levelSql} AND ${baseWordWhere}
        ORDER BY id ASC
@@ -173,13 +181,25 @@ export async function GET(request) {
     });
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
-    const isConn = code === "ECONNREFUSED" || code === "ER_ACCESS_DENIED_ERROR" || code === "ENOTFOUND";
+    const isConn =
+      code === "ECONNREFUSED" ||
+      code === "ER_ACCESS_DENIED_ERROR" ||
+      code === "ENOTFOUND" ||
+      code === "ER_BAD_DB_ERROR";
+    const sqlMsg = error && typeof error === "object" && "sqlMessage" in error ? String(error.sqlMessage) : "";
+    const hint =
+      sqlMsg && (sqlMsg.includes("vietnamese_meaning") || sqlMsg.includes("meaning"))
+        ? " Kiểm tra bảng vocabulary có cột nghĩa (meaning hoặc vietnamese_meaning)."
+        : "";
+    const devDetail =
+      process.env.NODE_ENV === "development" && error instanceof Error ? ` (${error.message})` : "";
+
     return NextResponse.json(
       {
         success: false,
         message: isConn
-          ? "Không kết nối được database. Kiểm tra cấu hình DB trong .env."
-          : "Failed to create quiz round.",
+          ? "Không kết nối được database. Kiểm tra MySQL/XAMPP và file .env (DB_NAME, DB_USER)."
+          : `Không tạo được vòng quiz.${hint}${devDetail}`.trim(),
       },
       { status: 500 }
     );

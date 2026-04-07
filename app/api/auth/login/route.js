@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { ensureUsersAuthColumns } from "@/lib/auth/ensure-verification-schema";
+import { resolveCookieSecure } from "@/lib/auth/resolve-cookie-secure";
 import { generateSessionToken, verifyPassword } from "@/lib/auth";
-import { phoneLoginCandidates } from "@/lib/phone-vn";
+import { normalizePhoneForStorage, phoneLoginCandidates } from "@/lib/phone-vn";
 
 const COOKIE_NAME = "session_token";
 const SESSION_DAYS = 7;
@@ -24,7 +26,7 @@ export async function POST(request) {
       );
     }
 
-    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NULL UNIQUE AFTER email");
+    await ensureUsersAuthColumns(pool);
     const normalizedIdentifier = identifier.toLowerCase();
     const isEmail = normalizedIdentifier.includes("@");
 
@@ -36,7 +38,13 @@ export async function POST(request) {
       );
       users = rows;
     } else {
-      const candidates = phoneLoginCandidates(identifier);
+      const cleaned = String(identifier).replace(/[\s\u200B-\u200D\uFEFF-]/g, "");
+      const candidates = [
+        ...new Set([
+          ...phoneLoginCandidates(cleaned),
+          ...phoneLoginCandidates(normalizePhoneForStorage(cleaned)),
+        ]),
+      ].filter(Boolean);
       if (candidates.length === 0) {
         return NextResponse.json(
           { success: false, message: "identifier and password are required." },
@@ -45,7 +53,10 @@ export async function POST(request) {
       }
       const ph = candidates.map(() => "?").join(", ");
       const [rows] = await pool.query(
-        `SELECT id, name, email, phone, password_hash FROM users WHERE phone IN (${ph}) LIMIT 1`,
+        `SELECT id, name, email, phone, password_hash
+         FROM users
+         WHERE TRIM(REPLACE(REPLACE(CONCAT(IFNULL(phone, '')), ' ', ''), '-', '')) IN (${ph})
+         LIMIT 1`,
         candidates
       );
       users = rows;
@@ -78,16 +89,19 @@ export async function POST(request) {
       },
     });
 
+    const cookieSecure = resolveCookieSecure(request);
+
     response.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: cookieSecure,
       path: "/",
       expires: expiresAt,
     });
 
     return response;
-  } catch (_error) {
+  } catch (err) {
+    console.error("[auth/login]", err);
     return NextResponse.json(
       { success: false, message: "Failed to login." },
       { status: 500 }
