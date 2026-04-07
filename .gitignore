@@ -1,0 +1,7 @@
+node_modules/
+.next/
+*.zip
+
+# local environment
+.env.local
+.env.*.local
