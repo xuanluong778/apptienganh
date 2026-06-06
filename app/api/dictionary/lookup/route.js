@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { translateDefinitionToVi } from "@/lib/dictionary/meaning-vi";
 
 export async function GET(request) {
   try {
@@ -45,15 +46,19 @@ export async function GET(request) {
       phonetics.find((p) => p && typeof p.text === "string" && p.text.trim())?.text || "";
     const firstAudio =
       phonetics.find((p) => p && typeof p.audio === "string" && p.audio.trim())?.audio || "";
+    const word = String(first.word || q);
+    const definition = String(firstDef?.definition || "");
+    const meaningVi = await translateDefinitionToVi(word, definition);
 
     return NextResponse.json({
       success: true,
       data: {
-        word: String(first.word || q),
+        word,
         phonetic: String(firstPhoneticText || ""),
         audio: String(firstAudio || ""),
         partOfSpeech: String(firstMeaning.partOfSpeech || ""),
-        definition: String(firstDef?.definition || ""),
+        definition,
+        meaningVi,
         example: String(firstDef?.example || ""),
         sourceUrl: Array.isArray(first.sourceUrls) ? String(first.sourceUrls[0] || "") : "",
       },

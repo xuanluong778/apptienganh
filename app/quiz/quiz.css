@@ -1,9 +1,17 @@
 /* Trang Quiz — file riêng thay styled-jsx (tránh màn trắng trên một số bản Next/App Router) */
 .quiz-route {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  /* Flex để thẻ quizCard co theo viewport — grid cũ khiến khung trắng cao theo nội dung → cắt đáp án */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.2rem 0.35rem;
+  box-sizing: border-box;
   background: linear-gradient(180deg, #9de8ff 0%, #86dbff 55%, #79d877 100%);
   font-family: "Fredoka", system-ui, sans-serif;
   position: relative;
@@ -22,42 +30,178 @@
 }
 
 .quiz-route .quizCard {
-  width: min(1260px, 98vw);
+  width: 80%;
+  max-width: 1100px;
+  margin: auto;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  align-self: stretch;
   background: #fff;
-  border: 4px solid #fff;
-  border-radius: 28px;
-  box-shadow: 0 14px 0 rgba(35, 51, 104, 0.16);
-  padding: 1.25rem 1.35rem 1.5rem;
+  border: 3px solid #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 0 rgba(35, 51, 104, 0.14);
+  padding: 0.4rem 0.55rem 0.45rem;
   text-align: center;
   position: relative;
   z-index: 1;
   animation: quiz-popIn 0.4s ease-out;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .quiz-route .quiz-layout {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 1.15rem;
-  align-items: start;
+  grid-template-columns: 200px minmax(0, 1fr);
+  /* Một hàng co giãn theo chiều cao khả dụng — cột phải mới cuộn được */
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.quiz-route .quiz-layout > aside.leftMenu {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.quiz-route .quiz-layout > div:nth-child(2) {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
+  position: relative;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mascot hoạt hình nhỏ bên trái */
+.quiz-route .quizMascot {
+  position: absolute;
+  left: 10px;
+  /* Đặt thấp hơn phần chữ từ vựng để không làm chữ bị lệch/che */
+  top: clamp(220px, 26vh, 320px);
+  width: 56px;
+  height: 56px;
+  z-index: 2;
+  animation: quiz-mascot-bounce 1.25s ease-in-out infinite;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.14));
+  pointer-events: none;
+}
+
+@keyframes quiz-mascot-bounce {
+  0% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+}
+
+/* Mode 3 (Nghe & trả lời): luôn thấy nút "Câu tiếp theo" */
+.quiz-route[data-mode="3"] .quiz-layout > div:nth-child(2) {
+  /* Trước khi kiểm tra: không còn nút Next nổi → không cần padding lớn */
+  padding-bottom: 18px;
+}
+
+.quiz-route[data-mode="3"] .nextBtn {
+  width: min(520px, 60%);
+}
+
+/* Mode 3: trước khi kiểm tra — không còn nút Next nổi */
+.quiz-route[data-mode="3"][data-m3="idle"] .nextBtn {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  z-index: auto;
+  margin: 0.35rem auto 0;
+}
+
+/* Mode 3: sau khi nộp — nút nằm trong flow, không che IPA/câu hỏi/câu ví dụ */
+.quiz-route[data-mode="3"][data-m3="done"] .quiz-layout > div:nth-child(2) {
+  padding-bottom: 0;
+}
+.quiz-route[data-mode="3"][data-m3="done"] .nextBtn {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  margin: 0.35rem auto 0;
+  z-index: 1;
+}
+
+/* Mode 3: khối info sau khi nộp không bị dính xuống đáy */
+.quiz-route[data-mode="3"] .dictationRevealInfo {
+  margin-bottom: 0.85rem;
+}
+
+/* Feedback absolute: nâng lên thêm để tránh đè chữ/đè nút */
+.quiz-route[data-mode="3"] .quizFeedbackWrong,
+.quiz-route[data-mode="3"] .quizFeedbackGreat {
+  bottom: 86px;
+}
+
+/* Mode 3: siết khối IPA + câu hỏi + ví dụ để vừa viewport (không cần scroll) */
+.quiz-route[data-mode="3"] .dictationRevealInfo {
+  margin: 0.1rem 0 0.35rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+.quiz-route[data-mode="3"] .dictationRevealInfo p {
+  margin: 0.12rem 0;
+}
+
+/* Chỉ lưới đáp án hút phần chiều cao còn lại — không cuộn, co nút trong ô */
+.quiz-route .quiz-layout > div:nth-child(2) > * {
+  flex-shrink: 0;
+}
+
+.quiz-route .quiz-layout > div:nth-child(2) > .choiceGrid {
+  align-content: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden; /* bỏ thanh trượt phần câu trả lời */
+  flex-shrink: 1;
+}
+
+.quiz-route:not([data-mode="3"]) .quiz-layout > div:nth-child(2) > .choiceGrid:not(.choiceGrid--stacked) {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.quiz-route .quiz-layout > div:nth-child(2) > .choiceGrid--stacked {
+  /* Mode 2 (Việt → Anh): 2 cột (2×2) */
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 0.28rem;
 }
 
 .quiz-route .leftMenu {
   background: #f7fbff;
   border: 2px dashed #c9d8ff;
-  border-radius: 16px;
-  padding: 0.6rem;
+  border-radius: 12px;
+  padding: 0.4rem;
 }
 
 .quiz-route .modeBtn {
   width: 100%;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
   border: 2px solid #0b2115;
   background: #0b2115;
   color: #fff;
   border-radius: 50px;
-  padding: 0.55rem 0.65rem;
+  padding: 0.4rem 0.5rem;
   font-weight: 700;
+  font-size: 0.82rem;
   cursor: pointer;
 }
 
@@ -68,19 +212,136 @@
 
 .quiz-route h1 {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: clamp(0.95rem, 3.2vw, 1.75rem);
   color: #ffffff;
   font-family: "Fredoka", system-ui, sans-serif;
   text-shadow: 0 4px 0 #2b68cb;
   background: linear-gradient(90deg, #4f8cff, #ff7eb6);
-  border-radius: 18px;
-  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  padding: 0.2rem 0.45rem;
 }
 
 .quiz-route .subtitle {
-  margin: 0.7rem 0 0.7rem;
+  margin: 0.06rem 0;
+  font-size: clamp(0.72rem, 2.1vw, 0.9rem);
   color: #2f4f87;
   font-weight: 600;
+}
+
+.quiz-route .quizStatusBar {
+  position: relative;
+  margin: 0.12rem auto 0.08rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.quiz-route .quizStatusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  border: 2px solid #0b2115;
+  background: #ffffff;
+  color: #0b2115;
+  font-weight: 900;
+  font-size: 0.82rem;
+  font-family: var(--font-heading), "Oswald", Roboto, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.quiz-route .quizStatusPill--streak {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.quiz-route .quizStatusKey {
+  opacity: 0.9;
+}
+
+.quiz-route .quizStatusVal {
+  font-variant-numeric: tabular-nums;
+}
+
+.quiz-route .quizXpToast {
+  position: absolute;
+  right: 50%;
+  transform: translateX(50%);
+  top: -22px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5ecf7a, #2e9f52);
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  font-weight: 900;
+  font-size: 0.82rem;
+  animation: quiz-xp-pop 1.05s ease forwards;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.quiz-route .quizStatusPill--streak.streakUp {
+  animation: quiz-streak-pulse 0.65s ease;
+}
+
+.quiz-route .quizStatusPill--streak.streakReset {
+  animation: quiz-streak-reset 0.75s ease;
+}
+
+@keyframes quiz-xp-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(50%) translateY(6px) scale(0.92);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(50%) translateY(0) scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(50%) translateY(-10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(50%) translateY(-14px) scale(0.98);
+  }
+}
+
+@keyframes quiz-streak-pulse {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes quiz-streak-reset {
+  0% {
+    transform: translateX(0);
+    filter: saturate(1);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+    filter: saturate(0.7);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+    filter: saturate(1);
+  }
 }
 
 .quiz-route .partsToolbar {
@@ -88,9 +349,9 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 0.65rem;
-  padding: 0.45rem 0.5rem;
+  gap: 0.35rem;
+  margin-bottom: 0.2rem;
+  padding: 0.28rem 0.4rem;
   border: 2px dashed #c9d8ff;
   border-radius: 12px;
   background: #f8fbff;
@@ -163,19 +424,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
-  margin: 0.5rem auto 0.85rem;
-  padding: 0.65rem 1rem;
+  margin: 0;
+  padding: 0.4rem 0.65rem;
   max-width: 420px;
   border-radius: 16px;
   background: #fff;
   border: 2px solid #ffd0d0;
   box-shadow: 0 6px 18px rgba(180, 60, 60, 0.12);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 52px;
+  z-index: 5;
+  pointer-events: none;
 }
 
 .quiz-route .quizFeedbackWrong-emoji {
-  font-size: 2rem;
+  font-size: 1.45rem;
   line-height: 1;
 }
 
@@ -183,26 +450,32 @@
   margin: 0;
   color: #d32f2f;
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 0.95rem;
 }
 
 .quiz-route .quizFeedbackGreat {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
-  margin: 0.5rem auto 0.85rem;
-  padding: 0.65rem 1rem;
+  margin: 0;
+  padding: 0.4rem 0.65rem;
   max-width: 420px;
   border-radius: 16px;
   background: #f0fdf4;
   border: 2px solid #86efac;
   box-shadow: 0 6px 18px rgba(34, 160, 80, 0.12);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 52px;
+  z-index: 5;
+  pointer-events: none;
 }
 
 .quiz-route .quizFeedbackGreat-emoji {
-  font-size: 2rem;
+  font-size: 1.45rem;
   line-height: 1;
 }
 
@@ -210,7 +483,7 @@
   margin: 0;
   color: #15803d;
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 0.95rem;
 }
 
 .quiz-route .nextBtn:disabled {
@@ -262,14 +535,16 @@
   border-color: #e53935 !important;
 }
 
-.quiz-route .dictationCorrectLine {
-  margin: -0.35rem 0 0.4rem;
-  padding: 0.55rem 0.75rem;
+.quiz-route[data-mode="3"] .dictationCorrectLine {
+  margin: 0.1rem 0 0.2rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 12px;
   background: #e8f8ee;
   border: 2px solid #8fd4a8;
   color: #156b3a;
   font-size: 1rem;
+  width: 80%;
+  margin: 0.1rem auto 0.2rem;
   text-align: center;
 }
 
@@ -278,8 +553,8 @@
 }
 
 .quiz-route .dictationInlineFeedback {
-  margin: 0 0 0.42rem;
-  font-size: 30px;
+  margin: 0.1rem 0 0.25rem;
+  font-size: 0.95rem;
   font-weight: 800;
   text-align: left;
   width: 100%;
@@ -287,10 +562,65 @@
 
 .quiz-route .dictationInlineFeedback--wrong {
   color: #c62828;
+  display: inline-block;
+  width: auto;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.28);
 }
 
 .quiz-route .dictationInlineFeedback--great {
   color: #1b8a42;
+  display: inline-block;
+  width: auto;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+/* Mode 3: IPA + câu hỏi + ví dụ hiển thị ngay trong khối kết quả */
+.quiz-route .dictationRevealInline {
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px dashed rgba(21, 107, 58, 0.35);
+  color: #1f3b64;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+.quiz-route .dictationRevealInline p {
+  margin: 0.12rem 0;
+}
+
+/* Mode 3: nút play đọc câu ví dụ */
+.quiz-route[data-mode="3"] .dictationExampleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.quiz-route[data-mode="3"] .dictationExampleText {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.quiz-route[data-mode="3"] .dictationExamplePlay {
+  flex: 0 0 auto;
+  border: 2px solid #ffffff;
+  border-radius: 10px;
+  padding: 0.22rem 0.5rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(180deg, #5ecf7a, #2e9f52);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.16);
+}
+.quiz-route[data-mode="3"] .dictationExamplePlay:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .quiz-route .dictationReadBtn {
@@ -307,8 +637,8 @@
 }
 
 .quiz-route .dictationRevealInfo {
-  margin: -0.15rem 0 0.55rem;
-  padding: 0.55rem 0.75rem;
+  margin: 0.1rem 0 0.25rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 12px;
   background: #f6f9ff;
   border: 1px solid #d6e2ff;
@@ -322,7 +652,7 @@
 
 .quiz-route .progressWrap {
   width: 100%;
-  height: 14px;
+  height: 10px;
   border-radius: 999px;
   background: #e7eeff;
   overflow: hidden;
@@ -335,47 +665,123 @@
 }
 
 .quiz-route .progressText {
-  margin: 0.4rem 0 0.6rem;
+  margin: 0.08rem 0 0.12rem;
+  font-size: 0.8rem;
   color: #4a67a0;
   font-weight: 600;
 }
 
 .quiz-route .wordBox {
   font-family: "Fredoka", system-ui, sans-serif;
-  font-size: clamp(2rem, 6vw, 3.3rem);
+  font-size: clamp(0.95rem, 3.2vmin, 1.45rem);
   color: #2e4f88;
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.1rem;
   animation: quiz-bounce 1.5s ease-in-out infinite;
+}
+
+.quiz-route .wordBox--visual {
+  font-size: 2rem;
+  margin-top: 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* Result feedback (visual) */
+.quiz-route.quiz-route--correct .quizCard {
+  animation: quiz-correct-pop 0.52s ease;
+}
+
+.quiz-route.quiz-route--wrong .quizCard {
+  animation: quiz-wrong-shake 0.52s ease;
+}
+
+@keyframes quiz-correct-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.015);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes quiz-wrong-shake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 .quiz-route .choiceGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.7rem;
-  margin-bottom: 0.9rem;
+  /* Tăng khoảng cách trên/dưới giữa các đáp án */
+  gap: 0.75rem 0.6rem;
+  margin-bottom: 0.12rem;
 }
 
 .quiz-route .choiceGrid--stacked {
-  gap: 0.65rem;
+  gap: 0.75rem;
+}
+
+/* Mode 2 (Việt → Anh): đẩy phần đáp án xuống một chút */
+.quiz-route .choiceGrid.choiceGrid--stacked {
+  margin-top: 20px;
 }
 
 .quiz-route .choiceCell {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.35rem;
+  gap: 0.12rem;
+  min-height: 0;
 }
 
 .quiz-route .choiceBtn {
-  border: 3px solid #fff;
-  border-radius: 16px;
+  border: 2px solid #fff;
+  border-radius: 10px;
   color: #fff;
-  font-size: 1.05rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  padding: 0.65rem 0.5rem;
+  padding: 0.22rem 0.3rem;
   cursor: pointer;
-  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.15);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
   transition: transform 0.15s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  justify-self: center;
+}
+
+/* Mode 1: nút trực tiếp trong lưới 2×2 — đủ chỗ cho tiếng Việt nhiều âm tiết */
+.quiz-route .choiceGrid:not(.choiceGrid--stacked) > .choiceBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  padding: 0.24rem 0.42rem;
+  min-height: 2.25rem;
+  overflow: hidden;
 }
 
 .quiz-route .choiceBtn--block {
@@ -383,10 +789,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.1rem;
   text-align: center;
-  min-height: 4.5rem;
-  padding: 0.5rem 0.45rem 0.55rem;
+  min-height: 2.35rem;
+  flex: 0 0 auto;
+  padding: 0.24rem 0.35rem 0.26rem;
+  overflow: visible;
 }
 
 .quiz-route .choiceBtn-top {
@@ -398,24 +806,24 @@
 }
 
 .quiz-route .choiceWord-text {
-  font-size: 1.05rem;
+  font-size: clamp(0.82rem, 2.4vmin, 0.98rem);
 }
 
 .quiz-route .choiceIpa {
   display: block;
-  font-size: 0.8rem;
+  font-size: clamp(0.68rem, 1.8vmin, 0.76rem);
   font-weight: 600;
   opacity: 0.92;
-  line-height: 1.25;
+  line-height: 1.15;
   word-break: break-word;
 }
 
 .quiz-route .choicePlayMini {
   border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  padding: 0.32rem 0.5rem;
+  border-radius: 10px;
+  padding: 0.2rem 0.4rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
   color: #fff;
@@ -467,15 +875,20 @@
 }
 
 .quiz-route .nextBtn {
-  border: 3px solid #fff;
-  border-radius: 14px;
-  padding: 0.45rem 1rem;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  padding: 0.28rem 0.6rem;
   font-family: "Fredoka", system-ui, sans-serif;
-  font-size: 1.15rem;
+  font-size: 0.85rem;
   color: #fff;
   background: linear-gradient(180deg, #6f9dff, #4f8cff);
-  box-shadow: 0 7px 0 rgba(0, 0, 0, 0.15);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
   cursor: pointer;
+  margin-top: 0.2rem;
+  flex: 0 0 auto;
+  width: 60%;
+  margin: auto;
+  line-height: 30px;
 }
 
 .quiz-route .nextBtn--play {
@@ -484,45 +897,47 @@
 }
 
 .quiz-route .resultBox h2 {
-  margin: 0.3rem 0 0.4rem;
+  margin: 0.15rem 0 0.2rem;
   color: #2f4f88;
   font-family: "Fredoka", system-ui, sans-serif;
-  font-size: 2rem;
+  font-size: clamp(1rem, 3.6vw, 1.45rem);
 }
 
 .quiz-route .resultBox p {
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.35rem;
   color: #3f5f96;
-  font-size: 1.2rem;
+  font-size: 0.88rem;
 }
 
 .quiz-route .wrongList {
-  margin: 0.4rem 0 1rem;
+  margin: 0.2rem 0 0.45rem;
   text-align: left;
   border: 2px dashed #c9d8ff;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #f7fbff;
-  padding: 0.65rem;
-  max-height: 280px;
-  overflow: auto;
+  padding: 0.4rem 0.45rem;
+  max-height: min(34dvh, 200px);
+  overflow: hidden;
 }
 
 .quiz-route .wrongList h3 {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.25rem;
   color: #2f4f88;
+  font-size: 0.82rem;
 }
 
 .quiz-route .wrongItem {
   border: 1px solid #d9e6ff;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
-  padding: 0.45rem 0.55rem;
-  margin-bottom: 0.4rem;
+  padding: 0.28rem 0.38rem;
+  margin-bottom: 0.25rem;
 }
 
 .quiz-route .wrongItem p {
-  margin: 0.2rem 0;
-  font-size: 0.96rem;
+  margin: 0.12rem 0;
+  font-size: 0.78rem;
+  line-height: 1.25;
 }
 
 .quiz-route .bad {
@@ -540,15 +955,43 @@
   font-weight: 700;
 }
 
+@media (max-height: 700px) {
+  .quiz-route .quizCard {
+    padding: 0.3rem 0.45rem 0.35rem;
+    border-radius: 16px;
+  }
+
+  .quiz-route .partsToolbar {
+    margin-bottom: 0.12rem;
+    padding: 0.2rem 0.35rem;
+  }
+
+  .quiz-route .progressText {
+    margin: 0.06rem 0 0.1rem;
+  }
+
+  .quiz-route .quizMascot {
+    top: 120px;
+    transform-origin: 50% 50%;
+  }
+}
+
 @media (max-width: 700px) {
   .quiz-route .quiz-layout {
     grid-template-columns: 1fr;
+    /* Sidebar trên, nội dung dưới — hàng dưới co theo viewport */
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .quiz-route .choiceGrid {
     grid-template-columns: 1fr;
   }
+  /* Mode 1: 1 cột × 4 hàng — chia đều chiều cao, không cuộn */
+  .quiz-route:not([data-mode="3"]) .quiz-layout > div:nth-child(2) > .choiceGrid:not(.choiceGrid--stacked) {
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
   .quiz-route .choiceGrid--stacked {
     grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
   }
   .quiz-route .partsToolbar {
     gap: 0.4rem;

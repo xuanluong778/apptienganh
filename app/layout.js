@@ -1,18 +1,16 @@
 import "./globals.css";
+import "./beego-design.css";
+import "./beego.css";
 import { Oswald, Roboto } from "next/font/google";
 import AppProviders from "@/components/AppProviders";
 import GuestGateProvider from "@/components/GuestGateProvider";
-import DictionarySearchBar from "@/components/DictionarySearchBar";
-import KidMainNav from "@/components/KidMainNav";
-import TrialCountdown from "@/components/TrialCountdown";
-import UpgradeMenu from "@/components/billing/UpgradeMenu";
-import BottomAccountDock from "@/components/account/BottomAccountDock";
+import AppShell from "@/components/beego/AppShell";
 
 const roboto = Roboto({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "700"],
   display: "swap",
-  preload: true
+  preload: true,
 });
 
 const oswald = Oswald({
@@ -20,37 +18,26 @@ const oswald = Oswald({
   weight: ["500", "600", "700"],
   display: "swap",
   variable: "--font-heading",
-  preload: true
+  preload: true,
 });
 
 export const metadata = {
-  title: "Ứng dụng tiếng Anh cho bé",
-  description: "Học tiếng Anh qua từ vựng và trò chơi",
+  title: "Beego — Học tiếng Anh bằng AI | beego.vn",
+  description:
+    "Beego là nền tảng học tiếng Anh bằng AI cho mọi độ tuổi. Mobile-first, dễ dùng cho mọi người.",
+  metadataBase: new URL("https://beego.vn"),
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body className={`${roboto.className} ${oswald.variable}`}>
         <AppProviders>
           <GuestGateProvider>
-            <div className="kid-nav-sticky-block">
-              <header className="kid-nav-wrap">
-                <div className="kid-nav-toolbar kid-nav-toolbar--main">
-                  <KidMainNav />
-                </div>
-                <div className="kid-nav-upgrade-corner" aria-label="Nâng cấp tài khoản">
-                  <UpgradeMenu />
-                  <TrialCountdown placement="corner" />
-                </div>
-              </header>
-              <DictionarySearchBar />
-            </div>
+            <AppShell>
+              <div className="page-content">{children}</div>
+            </AppShell>
           </GuestGateProvider>
-          <div className="page-content">
-            {children}
-          </div>
-          <BottomAccountDock />
         </AppProviders>
       </body>
     </html>

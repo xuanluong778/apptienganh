@@ -111,6 +111,31 @@ async function fetchWordMeta(word) {
 
 async function main() {
   const connection = await mysql.createConnection(getConfig());
+  // Ensure the vocabulary table exists in the target database.
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS vocabulary (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      word VARCHAR(120) NOT NULL,
+      ipa VARCHAR(120) NULL,
+      meaning VARCHAR(255) NULL,
+      vietnamese_meaning VARCHAR(255) NULL,
+      part_of_speech VARCHAR(40) NULL,
+      topic VARCHAR(120) NULL,
+      question_text VARCHAR(255) NULL,
+      example_sentence VARCHAR(255) NOT NULL,
+      example_sentence_vi VARCHAR(255) NULL,
+      example_sentence_ipa VARCHAR(255) NULL,
+      example_audio_url VARCHAR(500) NULL,
+      image_url VARCHAR(500) NOT NULL,
+      audio_url VARCHAR(500) NOT NULL,
+      level ENUM('beginner','elementary','intermediate') NOT NULL DEFAULT 'beginner',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_vocabulary_word_level (word, level),
+      INDEX idx_vocabulary_level (level),
+      INDEX idx_vocabulary_word (word)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
   const words = await fetchWords(1000);
 
   let inserted = 0;

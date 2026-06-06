@@ -13,9 +13,10 @@ function toTitleCase(word) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+import { buildStableVocabImageUrl } from "@/lib/vocabulary/stable-image-url";
+
 function fallbackImage(word) {
-  const keyword = encodeURIComponent(word.toLowerCase());
-  return `https://loremflickr.com/512/512/${keyword},kids,cartoon?lock=${keyword}`;
+  return buildStableVocabImageUrl({ word });
 }
 
 function fallbackAudio(word) {

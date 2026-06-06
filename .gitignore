@@ -1,7 +1,25 @@
 node_modules/
 .next/
+.cache/
 *.zip
 
 # local environment
 .env.local
 .env.*.local
+
+# database backups & dumps (local only)
+.backups/
+dump.rdb
+
+# large source documents (regenerate via scripts/)
+*.docx
+
+# python cache
+__pycache__/
+*.pyc
+
+# temp parse artifacts
+_docx_sample.txt
+_parse_out.txt
+_split_test.txt
+_stat.txt

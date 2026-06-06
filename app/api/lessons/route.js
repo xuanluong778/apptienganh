@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { isDbConnectionError } from "@/lib/db-errors";
 import { normalizeMediaUrl } from "@/lib/media-url";
 
 export async function GET() {
@@ -7,7 +8,7 @@ export async function GET() {
     const [rows] = await pool.query(
       `SELECT
          id,
-         COALESCE(NULLIF(word, ''), title) AS word,
+         word,
          image,
          audio,
          created_at,
@@ -27,6 +28,17 @@ export async function GET() {
       data: normalizedRows,
     });
   } catch (error) {
+    console.error("[api/lessons] GET failed", error?.message || error);
+
+    if (isDbConnectionError(error)) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        degraded: true,
+        message: "Database is offline — showing built-in lesson content.",
+      });
+    }
+
     return NextResponse.json(
       {
         success: false,
@@ -55,9 +67,9 @@ export async function POST(request) {
     }
 
     const [result] = await pool.query(
-      `INSERT INTO lessons (title, word, image, audio)
-       VALUES (?, ?, ?, ?)`,
-      [word, word, image, audio]
+      `INSERT INTO lessons (word, image, audio)
+       VALUES (?, ?, ?)`,
+      [word, image, audio]
     );
 
     return NextResponse.json(
@@ -74,6 +86,7 @@ export async function POST(request) {
       { status: 201 }
     );
   } catch (error) {
+    console.error("[api/lessons] POST failed", error?.message || error);
     return NextResponse.json(
       {
         success: false,

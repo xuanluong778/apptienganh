@@ -5,17 +5,27 @@ import { useCallback, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthLoggedIn } from "@/hooks/useAuthLoggedIn";
 import { useGuestGate } from "@/components/GuestGateProvider";
+import { SPEAKING_PATH } from "@/lib/beego/routes";
 
 const NAV_LINKS = [
   { href: "/", label: "Trang chủ", icon: "🏠" },
-  { href: "/lessons", label: "Bài học", icon: "📘" },
+  { href: SPEAKING_PATH, label: "Bài học", icon: "📘" },
   { href: "/quiz", label: "Quiz", icon: "🧠" },
   { href: "/pronunciation", label: "Phát Âm IPA", icon: "🎙️" },
+  { href: "/kids-learn-vocabulary", label: "Từ vựng vui", icon: "🎈" },
+  { href: "/kids-fun-stories", label: "Truyện vui", icon: "📖" },
   { href: "/vocabulary", label: "Từ vựng", icon: "📚" },
 ];
 
 /** Khách vẫn vào được (khớp middleware + API public). */
-const GUEST_ALLOWED_HREFS = new Set(["/", "/quiz", "/pronunciation", "/vocabulary"]);
+const GUEST_ALLOWED_HREFS = new Set([
+  "/",
+  "/quiz",
+  "/pronunciation",
+  "/vocabulary",
+  "/kids-learn-vocabulary",
+  "/kids-fun-stories",
+]);
 
 export default function KidMainNav() {
   const router = useRouter();
@@ -66,7 +76,11 @@ export default function KidMainNav() {
           <Link
             key={link.href}
             href={link.href}
-            className={`kid-nav-link ${pathname === link.href ? "kid-nav-link--active" : ""}`}
+            className={`kid-nav-link ${
+              pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href))
+                ? "kid-nav-link--active"
+                : ""
+            }`}
             onClick={(e) => {
               onNavClick(e, link.href);
               setMobileOpen(false);

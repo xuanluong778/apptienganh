@@ -306,12 +306,12 @@ export default function PronunciationPage() {
           </span>
         </div>
         <div className="ipa-hero">
-          <h1 className="ipa-pageTitle">Phát Âm IPA</h1>
+          <h1 className="ipa-pageTitle">Điểm phát âm</h1>
           <p className="badge-new" aria-hidden>
-            Luyện theo nhóm âm
+            Nghe mẫu · Ghi âm · Nhận gợi ý
           </p>
           <p className="ipa-pageHint">
-            Chọn một dòng bên dưới → nghe mẫu (🔊/🐌) → ghi âm 🎤 → xem điểm & gợi ý.
+            Chọn bài bên dưới → nghe mẫu → bấm ghi âm → xem điểm và gợi ý sửa.
           </p>
         </div>
 

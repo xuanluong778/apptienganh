@@ -7,6 +7,7 @@ import {
   getUserPlan,
 } from "@/lib/subscriptions/subscription-service";
 import { ensureUserProfileColumns } from "@/lib/users/ensure-user-profile-columns";
+import { ensureUserSessionsTable } from "@/lib/auth/ensure-session-schema";
 
 const COOKIE_NAME = "session_token";
 
@@ -20,6 +21,7 @@ export async function GET(request) {
       );
     }
 
+    await ensureUserSessionsTable();
     await ensureUserProfileColumns();
 
     const [rows] = await pool.query(

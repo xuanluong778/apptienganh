@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
 import { getVocabularyQuizColumns } from "@/lib/vocab-quiz-columns";
+import { getSessionUserIdFromRequest } from "@/lib/http/ai-entitlement";
+import { ensureUserWordProgressTable } from "@/lib/srs/ensure-schema";
+import { normalizeMediaUrl } from "@/lib/media-url";
 
 /** Tối đa số phần hiển thị (P1…P100); tránh hàng trăm nút và khối lượng quiz quá lớn. */
 const MAX_QUIZ_SECTIONS = 100;
@@ -22,7 +25,6 @@ function displayMeaning(row) {
   const w = String(row.word || "").trim();
   const m = String(row.vietnamese_meaning || "").trim();
   if (m) return m;
-  if (w) return `(Chưa có nghĩa TV) — ${w}`;
   return "";
 }
 
@@ -33,10 +35,16 @@ export async function GET(request) {
 
     const mField = `\`${meaningCol.replace(/`/g, "")}\``;
     const ipaExpr = pronCol ? `TRIM(\`${pronCol.replace(/`/g, "")}\`)` : `''`;
+    const mcPlain = meaningCol.replace(/`/g, "");
+    const pcPlain = pronCol ? pronCol.replace(/`/g, "") : "";
+    const ipaExprJoin = pcPlain ? `TRIM(v.\`${pcPlain}\`)` : `''`;
+    const selectListJoin = `v.id, v.word, ${ipaExprJoin} AS ipa, TRIM(v.\`${mcPlain}\`) AS vietnamese_meaning, v.example_sentence, v.question_text, v.audio_url, TRIM(COALESCE(v.image_url, '')) AS image_url`;
 
     const { searchParams } = new URL(request.url);
     const mode = String(searchParams.get("mode") || "1");
     const requestedSection = Number(searchParams.get("section") || 1);
+    const source = String(searchParams.get("source") || "").trim().toLowerCase();
+    const reviewPreferred = source === "review";
 
     const baseWordWhere = `word IS NOT NULL AND TRIM(word) <> ''`;
 
@@ -72,19 +80,65 @@ export async function GET(request) {
     const section = Math.min(Math.max(1, requestedSection), totalSections);
     const offset = (section - 1) * SECTION_SIZE;
 
-    const selectList = `id, word, ${ipaExpr} AS ipa, TRIM(${mField}) AS vietnamese_meaning, example_sentence, question_text, audio_url`;
+    const selectList = `id, word, ${ipaExpr} AS ipa, TRIM(${mField}) AS vietnamese_meaning, example_sentence, question_text, audio_url, TRIM(COALESCE(image_url, '')) AS image_url`;
 
-    const [rows] = await pool.query(
-      `SELECT ${selectList}
-       FROM vocabulary
-       WHERE ${levelSql} AND ${baseWordWhere}
-       ORDER BY id ASC
-       LIMIT ? OFFSET ?`,
-      [...levelParams, SECTION_SIZE, offset]
-    );
-    if (!rows.length) {
+    // SRS integration: prioritize due review words, then fallback to section words.
+    const userId = await getSessionUserIdFromRequest(request).catch(() => null);
+    let reviewRows = [];
+    if (reviewPreferred && !userId) {
+      return NextResponse.json({ success: false, message: "Đăng nhập để ôn tập." }, { status: 401 });
+    }
+    const joinLevelSql = levelSql === "1=1" ? "1=1" : "v.level = ?";
+    const joinBaseWordWhere = `v.word IS NOT NULL AND TRIM(v.word) <> ''`;
+
+    if (reviewPreferred && userId) {
+      try {
+        await ensureUserWordProgressTable();
+        const [r] = await pool.query(
+          `SELECT ${selectListJoin}
+           FROM user_word_progress p
+           INNER JOIN vocabulary v ON v.id = p.word_id
+           WHERE p.user_id = ?
+             AND p.next_review_at IS NOT NULL
+             AND p.next_review_at <= NOW()
+             AND ${joinLevelSql} AND ${joinBaseWordWhere}
+           ORDER BY p.next_review_at ASC
+           LIMIT ?`,
+          [userId, ...levelParams, SECTION_SIZE]
+        );
+        reviewRows = r || [];
+      } catch (_e) {
+        reviewRows = [];
+      }
+    }
+
+    const usedIds = new Set(reviewRows.map((x) => Number(x.id)).filter((n) => Number.isFinite(n)));
+    const remaining = Math.max(0, SECTION_SIZE - reviewRows.length);
+    let fallbackRows = [];
+    // Review flow: if no due words, fallback to new words (keep quiz playable).
+    if (remaining > 0) {
+      const notIn =
+        usedIds.size > 0 ? `AND id NOT IN (${Array.from(usedIds).map(() => "?").join(", ")})` : "";
+      const notInParams = usedIds.size > 0 ? Array.from(usedIds) : [];
+      const [rows] = await pool.query(
+        `SELECT ${selectList}
+         FROM vocabulary
+         WHERE ${levelSql} AND ${baseWordWhere}
+         ${notIn}
+         ORDER BY id ASC
+         LIMIT ? OFFSET ?`,
+        [...levelParams, ...notInParams, remaining, offset]
+      );
+      fallbackRows = rows || [];
+    }
+
+    const rowsForQuiz = [...reviewRows, ...fallbackRows];
+    if (!rowsForQuiz.length) {
       return NextResponse.json(
-        { success: false, message: "Không có từ trong phần này. Chọn phần khác hoặc import thêm từ vựng." },
+        {
+          success: false,
+          message: "Không có từ để tạo quiz. Hãy import thêm từ vựng hoặc thử lại.",
+        },
         { status: 404 }
       );
     }
@@ -113,12 +167,14 @@ export async function GET(request) {
     const optionPoolVn = poolRows.map((r) => displayMeaning(r)).filter(Boolean);
     const optionPoolEn = poolRows.map((r) => r.word).filter(Boolean);
 
-    for (const item of rows) {
+    for (const item of rowsForQuiz) {
       if (questions.length >= SECTION_SIZE) break;
       if (!item.word) continue;
 
       const vn = displayMeaning(item);
       if (!vn) continue;
+
+      const imageUrl = normalizeMediaUrl(item.image_url);
 
       if (mode === "1") {
         const wrong = shuffle(optionPoolVn.filter((v) => v !== vn)).slice(0, 3);
@@ -131,6 +187,7 @@ export async function GET(request) {
           example_sentence: item.example_sentence || "",
           question_text: item.question_text || "",
           audio_url: item.audio_url || "",
+          image_url: imageUrl,
           correct_answer: vn,
           options,
         });
@@ -150,6 +207,7 @@ export async function GET(request) {
           example_sentence: item.example_sentence || "",
           question_text: item.question_text || "",
           audio_url: "",
+          image_url: imageUrl,
           correct_answer: item.word,
           options,
         });
@@ -162,6 +220,7 @@ export async function GET(request) {
           example_sentence: item.example_sentence || "",
           question_text: item.question_text || "",
           audio_url: item.audio_url || "",
+          image_url: imageUrl,
           correct_answer: item.word,
           options: [],
         });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { generateSessionToken } from "@/lib/auth";
 import { resolveCookieSecure } from "@/lib/auth/resolve-cookie-secure";
+import { ensureUserSessionsTable } from "@/lib/auth/ensure-session-schema";
 
 export const SESSION_COOKIE_NAME = "session_token";
 export const SESSION_DAYS = 7;
@@ -31,6 +32,7 @@ export async function setSessionOnResponse(
 ): Promise<string> {
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  await ensureUserSessionsTable();
   await pool.query("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (?, ?, ?)", [
     userId,
     token,

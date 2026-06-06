@@ -1,0 +1,1536 @@
+/* Beego Vocabulary — approved mockup UI */
+
+/* Thu hẹp sidebar app khi đang ở trang từ vựng */
+@media (min-width: 900px) {
+  body:has(.beego-vocab-page) {
+    --beego-sidebar-w: 220px;
+  }
+
+  body:has(.beego-vocab-page) .beego-sidebar {
+    padding: 16px 10px;
+  }
+
+  body:has(.beego-vocab-page) .beego-sidebar-link {
+    gap: 10px;
+    padding: 8px 10px;
+    font-size: 0.88rem;
+  }
+
+  body:has(.beego-vocab-page) .beego-sidebar-link-icon {
+    width: 24px;
+    font-size: 1.1rem;
+  }
+}
+
+.beego-vocab-page {
+  width: 100%;
+  min-height: 100%;
+  background: #f1f5f9;
+}
+
+.beego-vocab-inner {
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  padding: 24px 16px 32px;
+}
+
+@media (min-width: 768px) {
+  .beego-vocab-inner {
+    padding: 32px 28px 40px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .beego-vocab-inner {
+    padding: 32px 40px 48px;
+  }
+}
+
+/* Hero: title + stats */
+.beego-vocab-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 900px) {
+  .beego-vocab-hero {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+}
+
+.beego-vocab-heroText h1 {
+  margin: 0;
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 700;
+  color: #1e3a8a;
+  letter-spacing: -0.02em;
+}
+
+.beego-vocab-sub {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.beego-vocab-statsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.beego-vocab-statCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  min-width: 0;
+}
+
+.beego-vocab-statCardIcon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.beego-vocab-statCardText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.beego-vocab-statCardLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.beego-vocab-statCardValue {
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Filter card */
+.beego-vocab-filterCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.beego-vocab-filterDesktop {
+  display: block;
+}
+
+.beego-vocab-filterMobile {
+  display: none;
+}
+
+.beego-vocab-filterBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.beego-vocab-searchBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.beego-vocab-searchIcon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  opacity: 0.55;
+}
+
+.beego-vocab-searchInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 0.92rem;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.beego-vocab-searchInput:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  background: #fff;
+}
+
+.beego-vocab-refreshBtn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 2px solid #2563eb;
+  background: #fff;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.beego-vocab-filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beego-vocab-filterGroup--topics {
+  width: 100%;
+}
+
+.beego-vocab-filterLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.beego-vocab-filterLabel--center {
+  display: block;
+  text-align: center;
+  width: 100%;
+}
+
+.beego-vocab-topicRail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.beego-vocab-topicArrow {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #2563eb;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.beego-vocab-topicArrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+
+.beego-vocab-chipScroll {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0 4px;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.beego-vocab-chipScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.beego-vocab-chipScrollInner {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  justify-content: center;
+  min-width: min(100%, max-content);
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+.beego-vocab-chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.beego-vocab-chipRow--center {
+  justify-content: center;
+}
+
+.beego-vocab-chipText {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.beego-vocab-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  max-width: 240px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.beego-vocab-chipIcon {
+  font-size: 0.95rem;
+}
+
+.beego-vocab-chip--active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.beego-vocab-chip--pos-noun.beego-vocab-chip--active {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.beego-vocab-chip--pos-verb:not(.beego-vocab-chip--active) {
+  border-color: #86efac;
+  color: #166534;
+}
+
+.beego-vocab-chip--pos-verb.beego-vocab-chip--active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.beego-vocab-chip--pos-adj:not(.beego-vocab-chip--active) {
+  border-color: #fdba74;
+  color: #c2410c;
+}
+
+.beego-vocab-chip--pos-adj.beego-vocab-chip--active {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #fff;
+}
+
+.beego-vocab-chip:hover:not(.beego-vocab-chip--active) {
+  border-color: #00a8b0;
+  background: #00a8b0;
+  color: #fff;
+}
+
+/* Grid */
+.beego-vocab-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .beego-vocab-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .beego-vocab-grid {
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  }
+}
+
+/* Vocabulary card */
+.beego-vocab-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.beego-vocab-card--accent-blue {
+  border-bottom: 3px solid #2563eb;
+}
+
+.beego-vocab-card--accent-pink {
+  border-bottom: 3px solid #ec4899;
+}
+
+.beego-vocab-card--accent-green {
+  border-bottom: 3px solid #16a34a;
+}
+
+.beego-vocab-cardMedia {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #e2e8f0;
+}
+
+@media (min-width: 1200px) {
+  .beego-vocab-cardMedia {
+    height: 190px;
+  }
+}
+
+.beego-vocab-cardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.beego-vocab-cardImg.beego-vocab-cardImg--loaded {
+  opacity: 1;
+}
+
+.beego-vocab-cardStar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #94a3b8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.beego-vocab-cardStar--on {
+  color: #f59e0b;
+}
+
+.beego-vocab-cardSpeaker {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.beego-vocab-cardBody {
+  padding: 16px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.beego-vocab-cardWord {
+  margin: 0;
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-weight: 700;
+  color: #1e40af;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.beego-vocab-cardIpa {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3b82f6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.beego-vocab-cardPos {
+  align-self: center;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.beego-vocab-cardPos--verb {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.beego-vocab-cardPos--adj {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.beego-vocab-cardMeaning {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+  color: #64748b;
+  line-height: 1.45;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.beego-vocab-cardRecordIcons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.beego-vocab-micBtn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 72px;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #0f766e;
+  font-family: inherit;
+}
+
+.beego-vocab-micBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.beego-vocab-micBtn--active .beego-vocab-micIcon {
+  background: #ccfbf1;
+  border-color: #14b8a6;
+  animation: beego-mic-pulse 1s ease infinite;
+}
+
+.beego-vocab-micIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid #99f6e4;
+  background: #f0fdfa;
+  font-size: 1.1rem;
+}
+
+.beego-vocab-micLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+@keyframes beego-mic-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.beego-vocab-cardScore {
+  margin: 0;
+  width: 100%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.beego-vocab-cardExampleBox {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  margin-top: 6px;
+  padding: 14px 12px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.beego-vocab-exampleSpeaker {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #2563eb;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.beego-vocab-cardExampleEn {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e40af;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.beego-vocab-cardExampleVi {
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.beego-vocab-cardActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.beego-vocab-btn {
+  min-height: 44px;
+  min-width: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: clamp(0.72rem, 2.2vw, 0.86rem);
+  cursor: pointer;
+  font-family: inherit;
+  padding: 8px 10px;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.beego-vocab-btn--solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  flex-wrap: wrap;
+}
+
+.beego-vocab-btn--solid:hover {
+  background: #1d4ed8;
+}
+
+.beego-vocab-btn--outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  margin-top: 4px;
+  border: 2px solid #2563eb;
+  background: #fff;
+  color: #2563eb;
+  align-self: stretch;
+  flex-wrap: wrap;
+}
+
+.beego-vocab-btn--outline:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+/* Messages */
+.beego-vocab-msg {
+  text-align: center;
+  color: #64748b;
+  padding: 24px 0;
+}
+
+.beego-vocab-error {
+  text-align: center;
+  color: #b42318;
+  font-weight: 600;
+  padding: 12px;
+  background: #fff1f2;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+/* Pagination */
+.beego-vocab-pager {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+@media (min-width: 768px) {
+  .beego-vocab-pager {
+    flex-direction: row;
+    justify-content: center;
+    gap: 24px;
+  }
+}
+
+.beego-vocab-pagerNums {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.beego-vocab-pagerNum,
+.beego-vocab-pagerArrow {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.beego-vocab-pagerNum--active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.beego-vocab-pagerArrow:disabled,
+.beego-vocab-pagerNum:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.beego-vocab-pagerEllipsis {
+  color: #94a3b8;
+  padding: 0 4px;
+}
+
+.beego-vocab-pagerMeta {
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+/* ── Layout 3 cột ── */
+.beego-vocab-topHeader h1 {
+  margin: 0;
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.beego-vocab-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.beego-vocab-col--center {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .beego-vocab-layout {
+    grid-template-columns: 240px minmax(0, 1fr) 260px;
+    gap: 16px;
+  }
+
+  .beego-vocab-col--left {
+    max-width: 240px;
+    min-width: 0;
+  }
+
+  .beego-vocab-col--right {
+    max-width: 260px;
+    min-width: 0;
+  }
+
+  .beego-vocab-col--left,
+  .beego-vocab-col--right {
+    position: sticky;
+    top: 16px;
+  }
+}
+
+.beego-vocab-searchRow--mobile {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.beego-vocab-searchRow--desktop {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .beego-vocab-searchRow--mobile {
+    display: none;
+  }
+  .beego-vocab-searchRow--desktop {
+    display: block;
+    margin-bottom: 10px;
+  }
+}
+
+.beego-vocab-searchInput--large {
+  width: 100%;
+  min-height: 52px;
+  font-size: 1rem;
+}
+
+.beego-vocab-stickyBar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #f1f5f9;
+  padding: 10px 0 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Tabs */
+.beego-vocab-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.beego-vocab-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.beego-vocab-tab {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.beego-vocab-tab--active {
+  background: #1e5af9;
+  border-color: #1e5af9;
+  color: #fff;
+}
+
+.beego-vocab-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.beego-vocab-topicTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #1e40af;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  max-width: 100%;
+}
+
+.beego-vocab-topicTrigger__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.beego-vocab-posRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.beego-vocab-posChip {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.beego-vocab-posChip--active {
+  background: #fff8e1;
+  border-color: #ffc107;
+  color: #1e3a8a;
+}
+
+/* Learning path */
+.beego-vocab-pathCard {
+  background: linear-gradient(160deg, #eef4ff, #fff);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 4px 16px rgba(30, 90, 249, 0.06);
+}
+
+.beego-vocab-pathCard__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: #1e3a8a;
+}
+
+.beego-vocab-pathCard__sub {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.beego-vocab-pathCard__metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.beego-vocab-pathMetric {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  min-width: 0;
+}
+
+.beego-vocab-pathMetric__icon {
+  font-size: 1.1rem;
+}
+
+.beego-vocab-pathMetric__label {
+  display: block;
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.beego-vocab-pathMetric__value {
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+.beego-vocab-pathCard__progressHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.beego-vocab-pathCard__progressBar {
+  height: 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.beego-vocab-pathCard__progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1e5af9, #ffc107);
+}
+
+.beego-vocab-pathCard__cta {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #1e5af9;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+.beego-vocab-pathCard__quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.beego-vocab-pathCard__quickBtn {
+  min-height: 36px;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #1e5af9;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 6px 8px;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+/* Side panel */
+.beego-vocab-sidePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.beego-vocab-sideBlock {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.beego-vocab-sideBlock--soft {
+  background: #fff8e1;
+  border-color: #fde68a;
+}
+
+.beego-vocab-sideBlock__title {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  color: #1e3a8a;
+}
+
+.beego-vocab-sideBlock__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.beego-vocab-reviewList {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beego-vocab-reviewItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.beego-vocab-reviewItem strong {
+  color: #1e40af;
+}
+
+.beego-vocab-reviewItem span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.beego-vocab-sideStats {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.beego-vocab-sideStats li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: #475569;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.beego-vocab-sideLink {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e5af9;
+  text-decoration: none;
+}
+
+/* Topic picker modal */
+.beego-vocab-topicOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .beego-vocab-topicOverlay {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
+.beego-vocab-topicSheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: min(88vh, 720px);
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+}
+
+@media (min-width: 768px) {
+  .beego-vocab-topicSheet {
+    border-radius: 20px;
+    max-height: min(80vh, 680px);
+  }
+}
+
+.beego-vocab-topicSheet__handle {
+  width: 40px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 999px;
+  margin: 10px auto 0;
+}
+
+@media (min-width: 768px) {
+  .beego-vocab-topicSheet__handle {
+    display: none;
+  }
+}
+
+.beego-vocab-topicSheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+}
+
+.beego-vocab-topicSheet__head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #1e3a8a;
+}
+
+.beego-vocab-topicSheet__close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: #f1f5f9;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.beego-vocab-topicSheet__searchWrap {
+  padding: 0 18px 12px;
+}
+
+.beego-vocab-topicSheet__search {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 0.95rem;
+}
+
+.beego-vocab-topicSheet__body {
+  overflow-y: auto;
+  padding: 0 18px 20px;
+  flex: 1;
+}
+
+.beego-vocab-topicSection {
+  margin-bottom: 18px;
+}
+
+.beego-vocab-topicSection h3 {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.beego-vocab-topicGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .beego-vocab-topicGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.beego-vocab-topicList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.beego-vocab-topicBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.beego-vocab-topicBtn--active {
+  border-color: #1e5af9;
+  background: #eef4ff;
+}
+
+.beego-vocab-topicBtn__icon {
+  font-size: 1.2rem;
+}
+
+.beego-vocab-topicBtn__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.beego-vocab-topicBtn__label {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.beego-vocab-topicBtn__count {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.beego-vocab-topicEmpty {
+  color: #94a3b8;
+  font-size: 0.88rem;
+  text-align: center;
+  padding: 12px;
+}
+
+/* Card upgrades */
+.beego-vocab-cardSkeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: beego-skeleton 1.2s ease infinite;
+}
+
+@keyframes beego-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.beego-vocab-cardBadges {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.beego-vocab-cardLevel {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 193, 7, 0.95);
+  color: #1e3a8a;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.beego-vocab-cardPosTag {
+  align-self: center;
+  margin-top: 2px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.beego-vocab-cardActions--grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.beego-vocab-btn--mic {
+  border: 1px solid #99f6e4;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.beego-vocab-btn--saved {
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.beego-vocab-btn--review {
+  margin-top: 6px;
+}
+
+.beego-vocab-btn--auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 6px;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 2px solid #1e5af9;
+  color: #1e5af9;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Toast */
+.beego-vocab-toast {
+  position: fixed;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-width: min(92vw, 400px);
+}
+
+.beego-vocab-toast--success {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.beego-vocab-toast--error {
+  background: #fff1f2;
+  color: #b42318;
+  border: 1px solid #fecaca;
+}
+
+.beego-vocab-toast--info {
+  background: #eef4ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.beego-vocab-toast__close {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.beego-vocab-authHint {
+  padding: 10px 14px;
+  background: #fff8e1;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.beego-vocab-authHint a {
+  color: #1e5af9;
+  font-weight: 700;
+}
+
+/* Mobile bottom bar */
+.beego-vocab-mobileBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 1100px) {
+  .beego-vocab-mobileBar {
+    display: none;
+  }
+}
+
+.beego-vocab-mobileBar__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  border: none;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.beego-vocab-mobileBar__btn span:first-child {
+  font-size: 1.2rem;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .beego-vocab-inner {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .beego-vocab-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .beego-vocab-btn {
+    min-height: 48px;
+  }
+
+  .beego-vocab-col--right {
+    margin-top: 8px;
+  }
+
+  .beego-vocab-layout {
+    gap: 14px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1099px) {
+  .beego-vocab-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .beego-vocab-inner {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .beego-vocab-inner {
+    padding-left: 20px;
+    padding-right: 24px;
+  }
+}

@@ -11,7 +11,13 @@ const createConfig = (phase) => {
     allowedDevOrigins: isDevServer
       ? ["*.ngrok-free.app", "*.ngrok-free.dev", "*.ngrok.io", "*.ngrok.app", "*.loca.lt"]
       : undefined,
-    // Không dùng webpack filesystem cache trong dev: trên Windows dễ lỗi "Cannot find module './xxxx.js'" khi chunk lệch.
+    // Trên Windows, cache webpack dev dễ lệch chunk → 404 layout.css / main-app.js. Tắt cache khi dev.
+    webpack: (config, { dev }) => {
+      if (dev) {
+        config.cache = false;
+      }
+      return config;
+    },
   };
 };
 

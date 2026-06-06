@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import {
-  buildFallbackReply,
   finalizeLessonsChatPayload,
   generateLessonsChatReply,
   sanitizeHistory,
@@ -13,6 +12,15 @@ import {
   recordPooledAiUsageSuccess,
 } from "@/lib/http/api-guards";
 import { recordChatSessionUserMessage } from "@/lib/ai/experiments/chat-performance-metrics";
+import { normalizePracticeMode } from "@/lib/lessons/practice-mode";
+import {
+  DEFAULT_LANGUAGE_SUPPORT_MODE,
+  normalizeLanguageSupportMode,
+} from "@/lib/lessons/language-support-mode";
+import {
+  DEFAULT_SELECTED_TEACHER,
+  normalizeSelectedTeacher,
+} from "@/lib/lessons/ai-teachers";
 
 async function requireAuthenticatedUser(request) {
   const token = request.cookies.get("session_token")?.value;
@@ -41,6 +49,8 @@ function composeStoredReply(finalAi) {
 }
 
 export async function POST(request) {
+  let message = "";
+  let languageSupportMode = DEFAULT_LANGUAGE_SUPPORT_MODE;
   try {
     const currentUser = await requireAuthenticatedUser(request);
     if (!currentUser?.id) {
@@ -70,7 +80,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const message = String(body.message || "").trim();
+    message = String(body.message || "").trim();
     const source = String(body.source || "text").toLowerCase() === "voice" ? "voice" : "text";
     const spokenText =
       typeof body.spoken_text === "string" && body.spoken_text.trim()
@@ -82,6 +92,25 @@ export async function POST(request) {
         ? Math.round(pronunciationScoreRaw)
         : null;
     const clientHistory = sanitizeHistory(body.history);
+    const practiceMode = normalizePracticeMode(body.practice_mode);
+    languageSupportMode = normalizeLanguageSupportMode(
+      body.language_support_mode ?? body.languageSupportMode
+    );
+    selectedTeacher = normalizeSelectedTeacher(
+      body.selectedTeacher ?? body.selected_teacher
+    );
+
+    let vocabularyWords = [];
+    if (Array.isArray(body.vocabulary_words)) {
+      vocabularyWords = body.vocabulary_words
+        .map((w) => String(w || "").trim())
+        .filter(Boolean)
+        .slice(0, 20);
+    }
+    if (practiceMode === "vocabulary_practice" && vocabularyWords.length === 0) {
+      const [lessonRows] = await pool.query(`SELECT word FROM lessons ORDER BY id ASC LIMIT 20`);
+      vocabularyWords = lessonRows.map((row) => String(row.word || "").trim()).filter(Boolean);
+    }
 
     if (!message) {
       return NextResponse.json({ success: false, message: "message is required." }, { status: 400 });
@@ -99,12 +128,27 @@ export async function POST(request) {
     const dbHistory = currentUser?.id ? await loadRecentHistoryFromDb(currentUser.id, 6) : [];
     const mergedHistory = [...dbHistory, ...clientHistory].slice(-10);
 
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[api/lessons/chat] payload", {
+        selectedTeacher,
+        practiceMode,
+        languageSupportMode,
+        source,
+        messageLength: message.length,
+        historyTurns: mergedHistory.length,
+      });
+    }
+
     const aiPayload = await generateLessonsChatReply({
       message,
       history: mergedHistory,
       vipPriority: Boolean(access.entitlement?.vipPriority),
+      practiceMode,
+      vocabularyWords,
+      languageSupportMode,
+      selectedTeacher,
     });
-    const finalAi = finalizeLessonsChatPayload(aiPayload, message);
+    const finalAi = finalizeLessonsChatPayload(aiPayload, message, { languageSupportMode });
     const composedReply = composeStoredReply(finalAi);
 
     await insertLessonChatLog({
@@ -131,7 +175,7 @@ export async function POST(request) {
       },
     });
   } catch (_error) {
-    const fallback = buildFallbackReply("");
+    const fallback = finalizeLessonsChatPayload(null, message, { languageSupportMode });
     return NextResponse.json(
       {
         success: true,

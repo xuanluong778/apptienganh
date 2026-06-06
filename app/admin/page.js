@@ -92,6 +92,25 @@ export default function AdminPage() {
           </Link>
 
           <Link
+            href="/admin/vocabulary-images"
+            style={{
+              display: "block",
+              padding: "0.8rem",
+              borderRadius: "16px",
+              border: "2px dashed #c9d8ff",
+              background: "#f7fbff",
+              textDecoration: "none",
+              color: "#2f4f88",
+              fontWeight: 700,
+            }}
+          >
+            <div style={{ fontSize: "1.05rem", marginBottom: "0.2rem" }}>Ảnh từ vựng</div>
+            <div style={{ fontSize: "0.9rem", color: "#4f67a0", fontWeight: 600 }}>
+              Duyệt, tạo lại ảnh theo prompt ngữ nghĩa Beego.
+            </div>
+          </Link>
+
+          <Link
             href="/admin/students"
             style={{
               display: "block",

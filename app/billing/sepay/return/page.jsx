@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SPEAKING_PATH } from "@/lib/beego/routes";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -33,8 +34,8 @@ function SepayReturnContent() {
           Về trang chủ
         </Link>
         {" · "}
-        <Link href="/lessons" style={{ color: "#2563eb" }}>
-          Bài học
+        <Link href={SPEAKING_PATH} style={{ color: "#2563eb" }}>
+          Luyện nói
         </Link>
       </p>
     </main>

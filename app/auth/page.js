@@ -221,8 +221,8 @@ export default function AuthPage() {
         <div className="auth-forms">
           {panel === "login" ? (
           <div className="auth-panel" aria-hidden={false}>
-            <h1 className="auth-title">Chào mừng trở lại</h1>
-            <p className="auth-subtitle">Đăng nhập vào tài khoản của bạn</p>
+            <h1 className="auth-title">Chào mừng trở lại Beego</h1>
+            <p className="auth-subtitle">Đăng nhập beego.vn — học tiếng Anh bằng AI</p>
 
             {alert.text ? (
               <div className={alert.type === "ok" ? "auth-alert auth-alert--ok" : "auth-alert"}>{alert.text}</div>
@@ -305,8 +305,8 @@ export default function AuthPage() {
           </div>
           ) : (
           <div className="auth-panel" aria-hidden={false}>
-            <h1 className="auth-title">Tạo tài khoản</h1>
-            <p className="auth-subtitle">Điền thông tin và xác thực email</p>
+            <h1 className="auth-title">Tham gia Beego</h1>
+            <p className="auth-subtitle">Tạo tài khoản beego.vn và chọn mục tiêu học</p>
 
             {alert.text ? (
               <div className={alert.type === "ok" ? "auth-alert auth-alert--ok" : "auth-alert"}>{alert.text}</div>

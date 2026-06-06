@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { ensureUserSessionsTable } from "@/lib/auth/ensure-session-schema";
 
 const COOKIE_NAME = "session_token";
 
@@ -7,6 +8,7 @@ export async function POST(request) {
   try {
     const token = request.cookies.get(COOKIE_NAME)?.value;
 
+    await ensureUserSessionsTable();
     if (token) {
       await pool.query("DELETE FROM user_sessions WHERE token = ?", [token]);
     }

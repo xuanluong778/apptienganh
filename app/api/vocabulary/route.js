@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { normalizeMediaUrl } from "@/lib/media-url";
 import { getSessionUserIdFromRequest } from "@/lib/http/ai-entitlement";
+import { ensureUserWordProgressTable } from "@/lib/srs/ensure-schema";
 import { ensureVocabularySchema } from "@/lib/vocabulary/ensure-schema";
 import {
   buildVocabularySelectFragments,
@@ -31,10 +32,19 @@ export async function GET(request) {
     const topic = (searchParams.get("topic") || "").trim();
     const pos = (searchParams.get("pos") || "").trim().toLowerCase();
     const q = (searchParams.get("q") || "").trim().toLowerCase();
+    const studyFilter = (searchParams.get("study_filter") || "all").trim().toLowerCase();
+    const bookmarkIdsRaw = (searchParams.get("bookmark_ids") || "").trim();
+    const bookmarkIds = bookmarkIdsRaw
+      ? bookmarkIdsRaw
+          .split(",")
+          .map((x) => Number(x))
+          .filter((n) => Number.isFinite(n) && n > 0)
+      : [];
     const offset = (page - 1) * limit;
 
     const whereClauses = [];
     const whereParams = [];
+    let authRequired = false;
 
     if (hasLevel && level && level !== "all") {
       whereClauses.push("level = ?");
@@ -52,6 +62,43 @@ export async function GET(request) {
     if (q) {
       whereClauses.push(`(LOWER(word) LIKE ? OR LOWER(COALESCE(\`${meaningCol}\`, '')) LIKE ?)`);
       whereParams.push(`%${q}%`, `%${q}%`);
+    }
+
+    if (studyFilter === "saved") {
+      if (!bookmarkIds.length) {
+        return NextResponse.json({
+          success: true,
+          data: [],
+          pagination: { page, limit, total: 0 },
+        });
+      }
+      whereClauses.push(`id IN (${bookmarkIds.map(() => "?").join(", ")})`);
+      whereParams.push(...bookmarkIds);
+    } else if (studyFilter !== "all") {
+      const userId = await getSessionUserIdFromRequest(request);
+      if (!userId) {
+        authRequired = true;
+        return NextResponse.json({
+          success: true,
+          data: [],
+          pagination: { page, limit, total: 0 },
+          auth_required: true,
+        });
+      }
+      await ensureUserWordProgressTable();
+      const progressBase = "SELECT word_id FROM user_word_progress WHERE user_id = ?";
+      whereParams.push(userId);
+      if (studyFilter === "learning") {
+        whereClauses.push(`id IN (${progressBase})`);
+      } else if (studyFilter === "review_today") {
+        whereClauses.push(
+          `id IN (${progressBase} AND next_review_at IS NOT NULL AND next_review_at <= NOW())`
+        );
+      } else if (studyFilter === "difficult") {
+        whereClauses.push(
+          `id IN (${progressBase} AND (wrong_count >= 2 OR (mastery_level = 0 AND wrong_count >= 1)))`
+        );
+      }
     }
 
     if (!whereClauses.length) {
@@ -91,6 +138,7 @@ export async function GET(request) {
         limit,
         total: Number(countRows[0]?.total || 0),
       },
+      auth_required: authRequired || undefined,
     });
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";

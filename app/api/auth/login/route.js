@@ -4,6 +4,7 @@ import { ensureUsersAuthColumns } from "@/lib/auth/ensure-verification-schema";
 import { resolveCookieSecure } from "@/lib/auth/resolve-cookie-secure";
 import { generateSessionToken, verifyPassword } from "@/lib/auth";
 import { normalizePhoneForStorage, phoneLoginCandidates } from "@/lib/phone-vn";
+import { ensureUserSessionsTable } from "@/lib/auth/ensure-session-schema";
 
 const COOKIE_NAME = "session_token";
 const SESSION_DAYS = 7;
@@ -27,6 +28,7 @@ export async function POST(request) {
     }
 
     await ensureUsersAuthColumns(pool);
+    await ensureUserSessionsTable();
     const normalizedIdentifier = identifier.toLowerCase();
     const isEmail = normalizedIdentifier.includes("@");
 

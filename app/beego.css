@@ -1,0 +1,743 @@
+/* Beego design tokens & shared layout */
+:root {
+  --beego-honey: #ffb020;
+  --beego-honey-dark: #e69500;
+  --beego-ink: #0f172a;
+  --beego-ink-soft: #334155;
+  --beego-sky: #e8f7ff;
+  --beego-sky-deep: #b8e8ff;
+  --beego-mint: #00a8b0;
+  --beego-surface: #ffffff;
+  --beego-radius: 18px;
+  --beego-radius-sm: 12px;
+  --beego-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --beego-nav-h: 64px;
+}
+
+html,
+body {
+  background: linear-gradient(165deg, #fff8eb 0%, var(--beego-sky) 38%, #d4f1f4 100%);
+}
+
+.beego-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--beego-ink);
+  font-family: var(--font-heading), "Oswald", Roboto, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.beego-brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--beego-honey), #ff8c00);
+  color: #fff;
+  font-size: 1.15rem;
+  box-shadow: 0 4px 0 rgba(230, 149, 0, 0.35);
+}
+
+.beego-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.beego-brand-name {
+  font-size: 1.15rem;
+}
+
+.beego-brand-domain {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--beego-mint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Nav */
+.beego-nav-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255, 248, 235, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 168, 176, 0.15);
+}
+
+.beego-nav-wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  padding-inline-end: max(14px, calc(120px + env(safe-area-inset-right)));
+}
+
+.beego-nav-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.beego-nav-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.beego-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.beego-nav-link {
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--beego-ink-soft);
+  background: var(--beego-surface);
+  border: 1px solid rgba(0, 168, 176, 0.2);
+  border-radius: 999px;
+  padding: 7px 12px;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.beego-nav-link:hover {
+  border-color: var(--beego-mint);
+  color: var(--beego-ink);
+}
+
+.beego-nav-link--active {
+  background: linear-gradient(180deg, var(--beego-honey), var(--beego-honey-dark));
+  color: #fff;
+  border-color: transparent;
+}
+
+.beego-nav-link--kids {
+  background: linear-gradient(180deg, #ffe08a, var(--beego-honey));
+  color: #5c3d00;
+  border-color: transparent;
+}
+
+.beego-nav-link--dashboard {
+  background: linear-gradient(180deg, #72d9ff, #4f8cff);
+  color: #fff;
+  border-color: transparent;
+}
+
+.beego-nav-link--admin {
+  background: linear-gradient(180deg, #a78bfa, #7c3aed);
+  color: #fff;
+  border-color: transparent;
+}
+
+.beego-nav-upgrade-corner {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.beego-mobile-head {
+  display: none;
+}
+
+/* Homepage */
+.beego-home {
+  min-height: calc(100vh - var(--beego-nav-h));
+  padding: 20px 16px max(96px, calc(20px + env(safe-area-inset-bottom)));
+}
+
+.beego-home-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.beego-hero {
+  text-align: center;
+  padding: 28px 20px 32px;
+  background: var(--beego-surface);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 168, 176, 0.18);
+  box-shadow: var(--beego-shadow);
+  margin-bottom: 24px;
+}
+
+.beego-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 176, 32, 0.15);
+  color: #9a6200;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.beego-hero h1 {
+  margin: 0;
+  font-family: var(--font-heading), "Oswald", Roboto, sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  color: var(--beego-ink);
+  letter-spacing: 0.01em;
+}
+
+.beego-hero p {
+  margin: 12px auto 0;
+  max-width: 620px;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  line-height: 1.55;
+}
+
+.beego-hero-actions {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.beego-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 800;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.beego-btn:active {
+  transform: translateY(2px);
+}
+
+.beego-btn--primary {
+  background: linear-gradient(180deg, var(--beego-honey), var(--beego-honey-dark));
+  color: #fff;
+  box-shadow: 0 6px 0 rgba(180, 110, 0, 0.3);
+}
+
+.beego-btn--secondary {
+  background: var(--beego-surface);
+  color: var(--beego-ink);
+  border: 2px solid rgba(0, 168, 176, 0.35);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.06);
+}
+
+.beego-section-title {
+  margin: 0 0 14px;
+  font-family: var(--font-heading), "Oswald", Roboto, sans-serif;
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  color: var(--beego-ink);
+  letter-spacing: 0.01em;
+}
+
+.beego-section-sub {
+  margin: -8px 0 16px;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.beego-track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.beego-track-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  background: var(--beego-surface);
+  border-radius: var(--beego-radius);
+  border: 1px solid rgba(0, 168, 176, 0.15);
+  box-shadow: var(--beego-shadow);
+  padding: 16px;
+  color: inherit;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.beego-track-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.beego-track-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.beego-track-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.beego-track-card h3 {
+  margin: 0;
+  font-family: var(--font-heading), "Oswald", Roboto, sans-serif;
+  font-size: 1.1rem;
+  color: var(--beego-ink);
+}
+
+.beego-track-card p {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.beego-track-audience {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--beego-mint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.beego-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.beego-tool-card {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  background: var(--beego-surface);
+  border-radius: var(--beego-radius-sm);
+  border: 1px solid rgba(0, 168, 176, 0.12);
+  padding: 12px 14px;
+  color: inherit;
+}
+
+.beego-tool-card strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--beego-ink);
+}
+
+.beego-tool-card span {
+  font-size: 0.8rem;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+}
+
+.beego-tool-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  background: var(--beego-sky);
+}
+
+/* Onboarding */
+body.page-onboarding {
+  background: linear-gradient(160deg, #fff8eb 0%, #e8f7ff 50%, #d4f1f4 100%);
+}
+
+body.page-onboarding .beego-nav-sticky,
+body.page-onboarding [data-app-bottom-dock] {
+  display: none !important;
+}
+
+body.page-onboarding .page-content {
+  min-height: 100dvh;
+  padding-bottom: 0;
+}
+
+.beego-onboarding {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+}
+
+.beego-onboarding-card {
+  width: min(720px, 100%);
+  background: var(--beego-surface);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 168, 176, 0.18);
+  box-shadow: var(--beego-shadow);
+  padding: clamp(20px, 4vw, 32px);
+}
+
+.beego-onboarding-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.beego-onboarding-step-dot {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.beego-onboarding-step-dot--active {
+  background: linear-gradient(90deg, var(--beego-honey), var(--beego-mint));
+}
+
+.beego-onboarding h1 {
+  margin: 0;
+  font-family: var(--font-heading), "Oswald", Roboto, sans-serif;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  color: var(--beego-ink);
+}
+
+.beego-onboarding-sub {
+  margin: 8px 0 20px;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+}
+
+.beego-track-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.beego-track-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  border-radius: 16px;
+  border: 2px solid #e2e8f0;
+  background: #fafafa;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--beego-ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.beego-track-pick:hover {
+  border-color: var(--beego-mint);
+}
+
+.beego-track-pick--selected {
+  border-color: var(--beego-honey);
+  background: rgba(255, 176, 32, 0.12);
+}
+
+.beego-track-pick span:first-child {
+  font-size: 1.6rem;
+}
+
+.beego-goal-list {
+  display: grid;
+  gap: 8px;
+}
+
+.beego-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--beego-ink-soft);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.beego-goal-item--selected {
+  border-color: var(--beego-mint);
+  background: rgba(0, 168, 176, 0.08);
+  color: var(--beego-ink);
+}
+
+.beego-goal-item input {
+  accent-color: var(--beego-mint);
+  width: 18px;
+  height: 18px;
+}
+
+.beego-level-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.beego-level-pick {
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  background: #fafafa;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.beego-level-pick--selected {
+  border-color: var(--beego-honey);
+  background: rgba(255, 176, 32, 0.1);
+}
+
+.beego-level-pick strong {
+  display: block;
+  color: var(--beego-ink);
+  font-size: 0.95rem;
+}
+
+.beego-level-pick span {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+}
+
+.beego-onboarding-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+/* Dashboard personalization */
+.beego-dash-track-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px dashed rgba(0, 168, 176, 0.35);
+  background: linear-gradient(135deg, rgba(255, 248, 235, 0.9), rgba(232, 247, 255, 0.9));
+  margin-bottom: 16px;
+}
+
+.beego-dash-track-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+}
+
+.beego-path-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.beego-path-step {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.beego-path-step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: #fff;
+  background: linear-gradient(180deg, var(--beego-mint), #008a91);
+}
+
+.beego-path-step strong {
+  display: block;
+  color: var(--beego-ink);
+  font-size: 0.95rem;
+}
+
+.beego-path-step span {
+  font-size: 0.82rem;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+}
+
+.beego-path-go {
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: var(--beego-mint);
+  white-space: nowrap;
+}
+
+/* Track landing */
+.beego-track-page {
+  min-height: calc(100vh - var(--beego-nav-h));
+  padding: 20px 16px max(96px, calc(20px + env(safe-area-inset-bottom)));
+}
+
+.beego-track-page-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.beego-track-hero {
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--beego-surface);
+  border: 1px solid rgba(0, 168, 176, 0.15);
+  box-shadow: var(--beego-shadow);
+  margin-bottom: 20px;
+}
+
+/* Responsive nav */
+@media (max-width: 1024px) {
+  .beego-nav-upgrade-corner {
+    display: none !important;
+  }
+
+  .beego-nav-toolbar > .beego-brand-logo {
+    display: none;
+  }
+
+  .beego-nav-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .beego-mobile-head {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .beego-mobile-iconBtn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(0, 168, 176, 0.25);
+    border-radius: 12px;
+    background: var(--beego-surface);
+    color: var(--beego-ink);
+    font-size: 1.2rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+
+  .beego-nav-links {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  .beego-nav-links--open {
+    display: flex;
+  }
+
+  .beego-nav-link {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    text-align: left;
+  }
+
+  .beego-nav-link-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 1.3rem;
+    background: var(--beego-sky);
+  }
+
+  .beego-nav-link-cta {
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: var(--beego-mint);
+    text-transform: uppercase;
+  }
+
+  .beego-track-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .beego-track-pick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1025px) {
+  .beego-nav-link-icon,
+  .beego-nav-link-cta {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .beego-track-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1025px) {
+  .beego-home {
+    padding: 28px 24px 100px;
+  }
+
+  .beego-track-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

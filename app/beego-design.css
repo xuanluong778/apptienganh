@@ -1,0 +1,672 @@
+/* Beego EdTech design system — mobile-first, tablet-first */
+:root {
+  --beego-honey: #ffb020;
+  --beego-honey-soft: #fff4d6;
+  --beego-honey-dark: #e69500;
+  --beego-blue: #2563eb;
+  --beego-blue-soft: #eff6ff;
+  --beego-ink: #0f172a;
+  --beego-ink-soft: #475569;
+  --beego-muted: #94a3b8;
+  --beego-bg: #f8fafc;
+  --beego-surface: #ffffff;
+  --beego-border: #e2e8f0;
+  --beego-radius: 20px;
+  --beego-radius-lg: 24px;
+  --beego-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  --beego-touch: 48px;
+  --beego-btn-h-mobile: 52px;
+  --beego-btn-h-tablet: 56px;
+  --beego-font-body: 17px;
+  --beego-font-body-tablet: 19px;
+  --beego-bottom-nav-h: 72px;
+  --beego-sidebar-w: 260px;
+  --beego-content-max: 1200px;
+  --beego-mint: #00a8b0;
+}
+
+.beego-section-title {
+  margin: 0 0 14px;
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+  color: var(--beego-ink);
+}
+
+.beego-dash-track-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px dashed rgba(0, 168, 176, 0.35);
+  background: linear-gradient(135deg, rgba(255, 248, 235, 0.9), rgba(232, 247, 255, 0.9));
+  margin-bottom: 16px;
+}
+
+.beego-dash-track-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+}
+
+.beego-path-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.beego-path-step {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-decoration: none;
+  color: inherit;
+  min-height: var(--beego-touch);
+}
+
+.beego-path-step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: #fff;
+  background: linear-gradient(180deg, var(--beego-mint), #008a91);
+}
+
+.beego-path-step strong {
+  display: block;
+  color: var(--beego-ink);
+  font-size: 0.95rem;
+}
+
+.beego-path-step span {
+  font-size: 0.82rem;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+}
+
+.beego-path-go {
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: var(--beego-mint);
+  white-space: nowrap;
+}
+
+html.beego-shell-active,
+html.beego-shell-active body {
+  background: var(--beego-bg);
+  font-size: var(--beego-font-body);
+  color: var(--beego-ink);
+}
+
+@media (min-width: 768px) {
+  html.beego-shell-active,
+  html.beego-shell-active body {
+    font-size: var(--beego-font-body-tablet);
+  }
+}
+
+/* App shell */
+.beego-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.beego-shell-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  width: 100%;
+}
+
+.beego-shell-main {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: calc(var(--beego-bottom-nav-h) + env(safe-area-inset-bottom));
+}
+
+.beego-shell-main .page-content {
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.beego-shell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid var(--beego-border);
+  backdrop-filter: blur(8px);
+}
+
+.beego-shell-topbar-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--beego-ink);
+}
+
+/* Bottom nav */
+.beego-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 6px 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--beego-surface);
+  border-top: 1px solid var(--beego-border);
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.beego-bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: var(--beego-touch);
+  padding: 6px 4px;
+  text-decoration: none;
+  color: var(--beego-ink-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.beego-bottom-nav-item:focus-visible {
+  outline: 2px solid var(--beego-blue);
+  outline-offset: 2px;
+}
+
+.beego-bottom-nav-item--active {
+  color: var(--beego-blue);
+  background: var(--beego-blue-soft);
+}
+
+.beego-bottom-nav-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+/* Tablet sidebar */
+.beego-sidebar {
+  display: none;
+  flex: 0 0 var(--beego-sidebar-w);
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 14px;
+  background: var(--beego-surface);
+  border-right: 1px solid var(--beego-border);
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.beego-sidebar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.beego-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 16px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--beego-border);
+  margin-bottom: 8px;
+}
+
+.beego-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--beego-touch);
+  padding: 10px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--beego-ink-soft);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.beego-sidebar-link:focus-visible {
+  outline: 2px solid var(--beego-blue);
+  outline-offset: 2px;
+}
+
+.beego-sidebar-link--active {
+  background: var(--beego-blue-soft);
+  color: var(--beego-blue);
+}
+
+.beego-sidebar-link-icon {
+  font-size: 1.25rem;
+  width: 28px;
+  text-align: center;
+}
+
+.beego-sidebar-kids {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed var(--beego-border);
+}
+
+/* Big CTA */
+.beego-big-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--beego-btn-h-mobile);
+  padding: 14px 24px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--beego-honey), var(--beego-honey-dark));
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(180, 110, 0, 0.25);
+  transition: transform 0.12s;
+}
+
+.beego-big-cta:active {
+  transform: translateY(2px);
+  box-shadow: 0 3px 0 rgba(180, 110, 0, 0.25);
+}
+
+.beego-big-cta:focus-visible {
+  outline: 3px solid var(--beego-blue);
+  outline-offset: 3px;
+}
+
+.beego-big-cta--secondary {
+  background: var(--beego-surface);
+  color: var(--beego-ink);
+  border: 2px solid var(--beego-border);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.04);
+}
+
+@media (min-width: 768px) {
+  .beego-big-cta {
+    min-height: var(--beego-btn-h-tablet);
+    font-size: 1.12rem;
+  }
+}
+
+/* Learning card */
+.beego-learning-card {
+  display: block;
+  padding: 18px 20px;
+  border-radius: var(--beego-radius);
+  background: var(--beego-surface);
+  border: 1px solid var(--beego-border);
+  box-shadow: var(--beego-shadow);
+  text-decoration: none;
+  color: inherit;
+}
+
+.beego-learning-card:active {
+  transform: scale(0.99);
+}
+
+.beego-learning-card h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: 1.05rem;
+  color: var(--beego-ink);
+}
+
+.beego-learning-card p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.beego-learning-card-icon {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+/* Stepper */
+.beego-stepper {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.beego-stepper-dot {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--beego-border);
+}
+
+.beego-stepper-dot--done,
+.beego-stepper-dot--active {
+  background: linear-gradient(90deg, var(--beego-honey), var(--beego-blue));
+}
+
+/* Progress ring */
+.beego-progress-ring-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+}
+
+.beego-progress-ring-label {
+  position: absolute;
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--beego-ink);
+}
+
+/* Voice button */
+.beego-voice-btn {
+  width: min(160px, 42vw);
+  height: min(160px, 42vw);
+  min-width: 120px;
+  min-height: 120px;
+  border-radius: 50%;
+  border: 4px solid var(--beego-honey);
+  background: linear-gradient(180deg, #fff9eb, var(--beego-honey-soft));
+  color: var(--beego-ink);
+  font-size: 3rem;
+  cursor: pointer;
+  box-shadow: var(--beego-shadow);
+  display: grid;
+  place-items: center;
+}
+
+.beego-voice-btn--recording {
+  border-color: #ef4444;
+  background: #fef2f2;
+  animation: beego-pulse 1.2s ease infinite;
+}
+
+@keyframes beego-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* Pick cards (onboarding) */
+.beego-pick-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.beego-pick-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: var(--beego-btn-h-mobile);
+  padding: 14px 16px;
+  border-radius: var(--beego-radius);
+  border: 2px solid var(--beego-border);
+  background: var(--beego-surface);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.beego-pick-card:focus-visible {
+  outline: 2px solid var(--beego-blue);
+  outline-offset: 2px;
+}
+
+.beego-pick-card--selected {
+  border-color: var(--beego-honey);
+  background: var(--beego-honey-soft);
+}
+
+.beego-pick-card-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.beego-pick-card strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--beego-ink);
+}
+
+.beego-pick-card span {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Prompt chips */
+.beego-prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.beego-prompt-chip {
+  min-height: var(--beego-touch);
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--beego-border);
+  background: var(--beego-surface);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--beego-ink);
+  cursor: pointer;
+}
+
+.beego-prompt-chip:focus-visible {
+  outline: 2px solid var(--beego-blue);
+  outline-offset: 2px;
+}
+
+/* Mascot */
+.beego-mascot {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.beego-mascot--sm {
+  font-size: 1.5rem;
+}
+
+/* Page layouts */
+.beego-page {
+  width: 100%;
+  max-width: var(--beego-content-max);
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: 24px;
+}
+
+.beego-page-hero {
+  text-align: center;
+  padding: 24px 16px;
+  margin-bottom: 20px;
+}
+
+.beego-page-hero h1 {
+  margin: 0 0 10px;
+  font-family: var(--font-heading), Oswald, sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  color: var(--beego-ink);
+}
+
+.beego-page-hero p {
+  margin: 0;
+  color: var(--beego-ink-soft);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.beego-grid-2 {
+  display: grid;
+  gap: 12px;
+}
+
+.beego-empty {
+  text-align: center;
+  padding: 32px 20px;
+  border-radius: var(--beego-radius);
+  background: var(--beego-surface);
+  border: 2px dashed var(--beego-border);
+}
+
+.beego-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+/* Lesson flow bar */
+.beego-lesson-flow {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.beego-lesson-flow-step {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--beego-surface);
+  border: 1px solid var(--beego-border);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--beego-ink-soft);
+  white-space: nowrap;
+}
+
+.beego-lesson-flow-step--current {
+  background: var(--beego-blue-soft);
+  border-color: var(--beego-blue);
+  color: var(--beego-blue);
+}
+
+.beego-lesson-flow-step--done {
+  background: var(--beego-honey-soft);
+  border-color: var(--beego-honey);
+  color: #9a6200;
+}
+
+/* Responsive breakpoints */
+@media (min-width: 768px) {
+  .beego-pick-grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .beego-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .beego-shell-main {
+    padding-bottom: calc(var(--beego-bottom-nav-h) + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 1200px) {
+  .beego-bottom-nav {
+    display: none;
+  }
+
+  .beego-sidebar {
+    display: flex;
+  }
+
+  .beego-shell-main {
+    padding-bottom: 24px;
+  }
+
+  .beego-shell-topbar {
+    display: none;
+  }
+
+  .beego-grid-2--desktop-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Landscape tablet: sidebar + 2 col */
+@media (min-width: 768px) and (orientation: landscape) {
+  .beego-bottom-nav {
+    display: none;
+  }
+
+  .beego-sidebar {
+    display: flex;
+  }
+
+  .beego-shell-main {
+    padding-bottom: 24px;
+  }
+}
+
+body.page-auth .beego-shell-nav,
+body.page-no-shell .beego-shell-nav {
+  display: none !important;
+}
+
+body.page-onboarding .beego-shell-topbar {
+  display: none;
+}
+
+body.page-onboarding .beego-shell-main,
+body.page-auth .beego-shell-main,
+body.page-no-shell .beego-shell-main {
+  padding-bottom: 0;
+}

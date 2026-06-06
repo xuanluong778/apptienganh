@@ -16,8 +16,26 @@
     "build": "node ./node_modules/next/dist/bin/next build",
     "start": "node ./node_modules/next/dist/bin/next start",
     "lint": "node ./node_modules/next/dist/bin/next lint",
+    "build:stories": "python scripts/build-docx-stories.py",
+    "build:docx-stories-vi": "node scripts/build-docx-stories-vi.mjs",
+    "build:fix-docx-titles": "node scripts/fix-docx-story-titles.mjs",
+    "build:cho-be-stories": "node scripts/build-cho-be-stories.mjs",
+    "build:cau-truyen-stories": "node scripts/build-cau-truyen-stories.mjs",
+    "build:word-emoji": "node scripts/build-word-emoji-map.mjs",
+    "build:word-pictogram": "node scripts/build-word-pictogram-map.mjs",
+    "build:story-vocab": "node scripts/build-story-vocab-meta.mjs",
     "seed:vocab": "node scripts/seed-1000-vocabulary.mjs",
-    "export:excel": "node scripts/export-project-excel.mjs"
+    "seed:vocab:fruit": "node --env-file=.env.local scripts/seed-trai-cay-vocabulary.mjs",
+    "export:excel": "node scripts/export-project-excel.mjs",
+    "voice-ws": "node scripts/voice-ws-gateway.mjs",
+    "voice-ws:dev": "node --env-file=.env.local scripts/voice-ws-gateway.mjs",
+    "voice-ws:local": "node --env-file=.env.local scripts/voice-ws-server.mjs",
+    "voice-llm-worker": "node scripts/voice-llm-worker.mjs",
+    "voice-llm-worker:dev": "node --env-file=.env.local scripts/voice-llm-worker.mjs",
+    "voice-tts-worker": "node scripts/voice-tts-worker.mjs",
+    "voice-tts-worker:dev": "node --env-file=.env.local scripts/voice-tts-worker.mjs",
+    "voice-usage-worker": "node scripts/voice-usage-worker.mjs",
+    "voice-usage-worker:dev": "node --env-file=.env.local scripts/voice-usage-worker.mjs"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
@@ -26,6 +44,7 @@
     "cmu-pronouncing-dictionary": "^3.0.0",
     "iconv-lite": "^0.7.2",
     "ioredis": "^5.10.1",
+    "jsonwebtoken": "^9.0.3",
     "microsoft-cognitiveservices-speech-sdk": "^1.49.0",
     "mysql2": "^3.11.3",
     "next": "^14.2.5",
@@ -34,7 +53,8 @@
     "react-dom": "^18.3.1",
     "sepay-pg-node": "^1.0.0",
     "stripe": "^17.7.0",
-    "twilio": "^5.13.1"
+    "twilio": "^5.13.1",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
